@@ -9,7 +9,7 @@ async function initDB() {
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASS || '',
-    database: process.env.DB_NAME || 'chcc_portal',
+    database: process.env.DB_NAME || 'defaultdb',
     multipleStatements: true,
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
   };
@@ -18,13 +18,13 @@ async function initDB() {
     console.log('Connecting to MySQL...');
     const connection = await mysql.createConnection(config);
 
-    console.log('Reading schema.sql...');
-    const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    console.log('Reading database.sql...');
+    const schema = fs.readFileSync(path.join(__dirname, 'database.sql'), 'utf8');
 
-    console.log('Applying schema instructions (this will reset the database)...');
+    console.log('Applying SAMS schema instructions (this will reset the database)...');
     await connection.query(schema);
 
-    console.log('Database initialized successfully with updated schema!');
+    console.log('🏫 SAMS Database initialized successfully with updated schema!');
     await connection.end();
     process.exit(0);
   } catch (err) {

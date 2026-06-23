@@ -1,8 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 function getToken() {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('portal_token');
+    return localStorage.getItem('sams_token');
   }
   return null;
 }
@@ -19,7 +19,6 @@ async function apiFetch(path: string, options: RequestInit = {}) {
 
   try {
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    // ... same logic for error handling and return
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       return { success: false, message: errorData.message || `API error: ${res.status} ${res.statusText}` };

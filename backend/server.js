@@ -43,23 +43,22 @@ if (!fs.existsSync('./uploads')) {
   fs.mkdirSync('./uploads');
 }
 
-// Routes
+// SAMS Routes
 app.use('/api/auth', require('./src/routes/auth'));
-app.use('/api/profile', require('./src/routes/profile'));
-app.use('/api/courses', require('./src/routes/courses'));
-app.use('/api/admin', require('./src/routes/admin'));
-app.use('/api/grades', require('./src/routes/grades'));
-app.use('/api/assignments', require('./src/routes/assignments'));
-app.use('/api/announcements', require('./src/routes/announcements'));
-app.use('/api/schedule', require('./src/routes/schedule'));
+app.use('/api/students', require('./src/routes/students'));
+app.use('/api/parents', require('./src/routes/parents'));
+app.use('/api/guards', require('./src/routes/guards'));
+app.use('/api/teachers', require('./src/routes/teachers'));
 app.use('/api/attendance', require('./src/routes/attendance'));
-app.use('/api/admin-advanced', require('./src/routes/admin_advanced'));
-app.use('/api/messaging', require('./src/routes/messaging'));
-app.use('/api/university', require('./src/routes/university'));
+app.use('/api/sms', require('./src/routes/sms'));
+app.use('/api/payroll', require('./src/routes/payroll'));
+app.use('/api/payslips', require('./src/routes/payslips'));
+app.use('/api/reports', require('./src/routes/reports'));
+app.use('/api/settings', require('./src/routes/settings'));
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'School Portal API is running!', timestamp: new Date().toISOString() });
+  res.json({ success: true, message: 'SAMS API is running!', timestamp: new Date().toISOString() });
 });
 
 // 404 handler
@@ -75,6 +74,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`\n🎓 School Portal API running at http://localhost:${PORT}`);
+  console.log(`\n🏫 SAMS API running at http://localhost:${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/api/health\n`);
 });
