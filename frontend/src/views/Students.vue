@@ -37,7 +37,8 @@ const form = ref({
   middle_name: '',
   grade_level: '',
   section: '',
-  face_encoding: ''
+  face_encoding: '',
+  face_descriptor: null as number[] | null
 });
 
 const loadStudents = async () => {
@@ -67,9 +68,15 @@ const openRegisterModal = () => {
     middle_name: '',
     grade_level: '',
     section: '',
-    face_encoding: ''
+    face_encoding: '',
+    face_descriptor: null
   };
   showModal.value = true;
+};
+
+// Receive 128-d descriptor from WebcamCapture
+const handleFaceDescriptor = (descriptor: number[]) => {
+  form.value.face_descriptor = descriptor.length > 0 ? descriptor : null;
 };
 
 const openEditModal = (student: any) => {
@@ -82,18 +89,34 @@ const openEditModal = (student: any) => {
     middle_name: student.middle_name || '',
     grade_level: student.grade_level || '',
     section: student.section || '',
-    face_encoding: student.face_encoding || ''
+    face_encoding: student.face_encoding || '',
+    face_descriptor: null
   };
   showModal.value = true;
 };
 
 const handleSubmit = async () => {
+  // Validate required fields
+  if (!form.value.student_no || !form.value.last_name || !form.value.first_name) {
+    toastStore.showToast('Please fill in Student No, Last Name, and First Name.', 'error');
+    return;
+  }
+
+  // Face encoding is REQUIRED for new registration
+  if (!isEditing.value && !form.value.face_encoding) {
+    toastStore.showToast('Biometric face registration is required. Please complete face verification before submitting.', 'error');
+    return;
+  }
+
   try {
     let res;
     if (isEditing.value && editingId.value) {
       res = await api.put(`/students/${editingId.value}`, form.value);
     } else {
-      res = await api.post('/students', form.value);
+      res = await api.post('/students', {
+        ...form.value,
+        face_descriptor: form.value.face_descriptor ?? null
+      });
     }
 
     if (res.success) {
@@ -309,12 +332,15 @@ onMounted(() => {
 
             <!-- Face Registration Webcam Capture -->
             <div class="webcam-column">
-              <label class="form-label">Biometric Face Registration (Optional)</label>
+              <label class="form-label">🔍 Biometric Face Registration</label>
               <div class="webcam-frame">
-                <WebcamCapture v-model="form.face_encoding" />
+                <WebcamCapture
+                  v-model="form.face_encoding"
+                  @face-descriptor="handleFaceDescriptor"
+                />
               </div>
               <p class="webcam-tip">
-                Snapshot registered here is processed for automated facial scanning gates.
+                <strong>Step 1:</strong> Center face in oval → <strong>Step 2:</strong> Blink eyes → Auto capture & save biometric data.
               </p>
             </div>
           </div>

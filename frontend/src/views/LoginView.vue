@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
+import { useToastStore } from '@/stores/toast';
+
 const username = ref('');
 const password = ref('');
 const error = ref('');
@@ -10,6 +12,7 @@ const loading = ref(false);
 const showPassword = ref(false);
 
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 const router = useRouter();
 
 onMounted(() => {
@@ -26,9 +29,11 @@ const handleSubmit = async () => {
   loading.value = true;
   const result = await authStore.login(username.value, password.value);
   if (result.success) {
+    toastStore.showToast('Login successful! Welcome back.', 'success');
     router.replace('/dashboard');
   } else {
     error.value = result.message ?? 'Login failed';
+    toastStore.showToast(result.message ?? 'Invalid credentials.', 'error');
   }
   loading.value = false;
 };
@@ -41,10 +46,8 @@ const handleSubmit = async () => {
     <div class="container">
       <div class="card">
         <div class="header">
-          <div class="logoCircle">
-            <span class="logoText">CHCC</span>
-          </div>
-          <h1 class="title">SAMS Login</h1>
+          <img src="/images/chcc_circle.png" alt="CHCC Logo" class="logoImage" />
+          <h1 class="title">Login</h1>
           <p class="subtitle">Basic Education of Concepcion Holy Cross College, Inc.</p>
         </div>
 
@@ -99,7 +102,7 @@ const handleSubmit = async () => {
       </div>
 
       <div class="schoolFooter">
-        Basic Education of Concepcion Holy Cross College, Inc. — SAMS
+        Basic Education of Concepcion Holy Cross College, Inc.
       </div>
     </div>
   </div>
@@ -153,32 +156,20 @@ const handleSubmit = async () => {
 
 .header { margin-bottom: 32px; }
 
-.logoCircle {
+.logoImage {
   width: 110px;
   height: 110px;
-  background: #1e3a5f;
   margin: 0 auto 24px;
+  display: block;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s backwards;
-  border: 4px solid #f5a623;
+  object-fit: cover;
   box-shadow: 0 10px 30px rgba(30, 58, 95, 0.25);
+  animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s backwards;
 }
 
 @keyframes popIn {
   0% { transform: scale(0); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
-}
-
-.logoText {
-  font-size: 32px;
-  font-weight: 900;
-  color: #f5a623;
-  letter-spacing: 3px;
-  font-family: 'Outfit', sans-serif;
 }
 
 .title {

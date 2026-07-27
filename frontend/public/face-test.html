@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/images/chcc_circle.png" />
+  <title>CHCC Face Recognition Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      gap: 18px;
+      padding: 28px 16px 40px;
+    }
+    h1 { color: #1e3a6e; font-size: 22px; font-weight: 800; margin-bottom: -6px; }
+    p.sub { color: #64748b; font-size: 13px; }
+
+    /* Status badge */
+    #status {
+      font-size: 17px; font-weight: 700;
+      padding: 10px 32px;
+      border-radius: 50px;
+      background: #e2e8f0; color: #64748b;
+      transition: all 0.3s;
+      min-width: 280px; text-align: center;
+    }
+    #status.detected { background: #dcfce7; color: #15803d; box-shadow: 0 0 18px rgba(22,163,74,0.2); }
+    #status.loading  { background: #fef9c3; color: #854d0e; }
+    #status.error    { background: #fee2e2; color: #dc2626; }
+
+    /* Camera */
+    .cam-wrap {
+      position: relative;
+      width: 500px; max-width: 100%;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 8px 32px rgba(30,58,110,0.18);
+      border: 3px solid #1e3a6e;
+    }
+    #video { width: 100%; display: block; background: #000; }
+    #canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+    /* Match card */
+    #match-card {
+      display: none;
+      background: #fff;
+      border-radius: 14px;
+      border: 2px solid #00c47a;
+      box-shadow: 0 4px 20px rgba(0,196,122,0.18);
+      padding: 16px 24px;
+      width: 500px; max-width: 100%;
+      align-items: center;
+      gap: 16px;
+    }
+    #match-card.show { display: flex; }
+    #match-photo {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #00c47a;
+      flex-shrink: 0;
+    }
+    #match-photo.hidden { display: none; }
+    #match-photo-placeholder {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: #e0f7ef;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px;
+      flex-shrink: 0;
+    }
+    .match-info { flex: 1; }
+    .match-label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .match-name { font-size: 22px; font-weight: 800; color: #1e3a6e; }
+    .match-sub { font-size: 13px; color: #475569; margin-top: 2px; }
+    .match-dist {
+      font-size: 13px; font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: #dcfce7; color: #15803d;
+    }
+
+    /* Stats grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 500px; max-width: 100%;
+    }
+    .info-box {
+      background: #fff; border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+    }
+    .info-box label { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+    .info-box span { font-size: 18px; font-weight: 700; color: #1e3a6e; display: block; margin-top: 2px; }
+
+    /* Student count badge */
+    #db-badge {
+      font-size: 12px; color: #475569;
+      background: #e0e7ff; border-radius: 20px;
+      padding: 4px 14px; font-weight: 600;
+    }
+
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    button {
+      padding: 10px 24px;
+      background: #1e3a6e; color: #fff;
+      border: none; border-radius: 24px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: #162d55; }
+    button.secondary {
+      background: transparent; color: #1e3a6e;
+      border: 2px solid #1e3a6e;
+    }
+    button.secondary:hover { background: #e0e7ff; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Face Recognition Test</h1>
+  <p class="sub">Tests real-time face matching against registered students</p>
+
+  <div id="status" class="loading">⏳ Loading models...</div>
+  <div id="db-badge">Students loaded: 0</div>
+
+  <div class="cam-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- Match Result Card -->
+  <div id="match-card">
+    <div id="match-photo-placeholder">👤</div>
+    <img id="match-photo" class="hidden" src="" alt="Student photo" />
+    <div class="match-info">
+      <div class="match-label">Recognized Student</div>
+      <div class="match-name" id="match-name">—</div>
+      <div class="match-sub" id="match-sub">—</div>
+    </div>
+    <div class="match-dist" id="match-dist">—</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="info-grid">
+    <div class="info-box">
+      <label>Status</label>
+      <span id="stat-face">—</span>
+    </div>
+    <div class="info-box">
+      <label>Confidence</label>
+      <span id="stat-conf">—</span>
+    </div>
+    <div class="info-box">
+      <label>FPS</label>
+      <span id="stat-fps">—</span>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button id="btn-in" style="background:#16a34a;" onclick="setLogMode('IN')">📥 Time IN Mode</button>
+    <button id="btn-out" class="secondary" onclick="setLogMode('OUT')">📤 Time OUT Mode</button>
+    <button onclick="reloadStudents()">🔄 Reload Students</button>
+    <button class="secondary" onclick="location.href='/'">← Back</button>
+  </div>
+  <div id="mode-badge" style="text-align:center; margin-top:10px; font-size:14px; font-weight:700; color:#16a34a;">Current Mode: 📥 TIME IN</div>
+
+  <script src="/face-api.min.js"></script>
+  <script>
+    const API = 'http://localhost:5000/api';
+    const THRESHOLD = 0.50; // euclidean distance — lower = stricter. 0.50 = 50% match required
+    let logMode = 'IN';
+
+    function setLogMode(mode) {
+      logMode = mode;
+      const btnIn = document.getElementById('btn-in');
+      const btnOut = document.getElementById('btn-out');
+      const badge = document.getElementById('mode-badge');
+      if (mode === 'IN') {
+        btnIn.style.background = '#16a34a';
+        btnIn.style.color = '#fff';
+        btnIn.classList.remove('secondary');
+        btnOut.style.background = 'transparent';
+        btnOut.style.color = '#1e3a6e';
+        btnOut.classList.add('secondary');
+        badge.textContent = 'Current Mode: 📥 TIME IN';
+        badge.style.color = '#16a34a';
+      } else {
+        btnOut.style.background = '#dc2626';
+        btnOut.style.color = '#fff';
+        btnOut.classList.remove('secondary');
+        btnIn.style.background = 'transparent';
+        btnIn.style.color = '#1e3a6e';
+        btnIn.classList.add('secondary');
+        badge.textContent = 'Current Mode: 📤 TIME OUT';
+        badge.style.color = '#dc2626';
+      }
+    }
+
+    const video   = document.getElementById('video');
+    const canvas  = document.getElementById('canvas');
+    const ctx     = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const dbBadge  = document.getElementById('db-badge');
+
+    let labeledDescriptors = [];
+    let lastTime = Date.now();
+    let running = false;
+    const lastLogTime = {};
+
+    // ──────────────────────────────────────────────
+    // Get auth token from localStorage (same as app)
+    // ──────────────────────────────────────────────
+    function getToken() {
+      return localStorage.getItem('sams_token') || '';
+    }
+
+    // ──────────────────────────────────────────────
+    // Load all registered students from backend
+    // and extract face descriptors
+    // ──────────────────────────────────────────────
+    async function reloadStudents() {
+      dbBadge.textContent = 'Loading students...';
+      labeledDescriptors = [];
+
+      const token = getToken();
+      if (!token) {
+        dbBadge.textContent = '⚠️ Not logged in — please log in first';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/students?limit=500`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!data.success) { dbBadge.textContent = '❌ ' + data.message; return; }
+
+        const students = data.data.filter(s => s.face_encoding || s.face_descriptor);
+        dbBadge.textContent = `Processing ${students.length} students...`;
+
+        let loaded = 0;
+        for (const s of students) {
+          try {
+            let descriptor = null;
+
+            // ✅ FAST PATH: use pre-computed descriptor from database
+            if (s.face_descriptor) {
+              const parsed = typeof s.face_descriptor === 'string'
+                ? JSON.parse(s.face_descriptor)
+                : s.face_descriptor;
+              if (Array.isArray(parsed) && parsed.length === 128) {
+                descriptor = new Float32Array(parsed);
+              }
+            }
+
+            // SLOW FALLBACK: re-detect from image if no descriptor saved
+            if (!descriptor && s.face_encoding) {
+              const img = await loadImage(s.face_encoding);
+              const result = await faceapi
+                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+              if (result) descriptor = result.descriptor;
+            }
+
+            if (descriptor) {
+              labeledDescriptors.push({
+                id: s.student_id,
+                name: `${s.first_name} ${s.last_name}`,
+                studentNo: s.student_no,
+                grade: s.grade_level || '',
+                section: s.section || '',
+                photo: s.face_encoding,
+                descriptor
+              });
+              loaded++;
+            }
+          } catch (e) {
+            console.warn('Could not process student:', s.student_no, e.message);
+          }
+        }
+
+        dbBadge.textContent = `✅ ${loaded} student${loaded !== 1 ? 's' : ''} ready for recognition`;
+      } catch (e) {
+        dbBadge.textContent = '❌ Error: ' + e.message;
+        console.error(e);
+      }
+    }
+
+    // Helper: load base64 image as HTMLImageElement
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    // ──────────────────────────────────────────────
+    // Find best matching student — returns match + all distances
+    // ──────────────────────────────────────────────
+    function findBestMatch(descriptor) {
+      if (!labeledDescriptors.length) return { match: null, distances: [] };
+
+      const distances = labeledDescriptors.map(ld => ({
+        name: ld.name,
+        distance: faceapi.euclideanDistance(descriptor, ld.descriptor)
+      })).sort((a, b) => a.distance - b.distance);
+
+      allDistances = distances;
+      const best = distances[0];
+      return {
+        match: best.distance <= THRESHOLD ? labeledDescriptors.find(l => l.name === best.name) : null,
+        bestDistance: best.distance,
+        distances
+      };
+    }
+
+    // ──────────────────────────────────────────────
+    // Detection loop
+    // ──────────────────────────────────────────────
+    async function detect() {
+      if (!running || video.readyState < 2) { setTimeout(detect, 150); return; }
+
+      const now = Date.now();
+      const fps = Math.round(1000 / Math.max(1, now - lastTime));
+      lastTime = now;
+      document.getElementById('stat-fps').textContent = fps;
+
+      const w = video.videoWidth, h = video.videoHeight;
+      canvas.width = w; canvas.height = h;
+
+      const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.30 });
+      const result = await faceapi
+        .detectSingleFace(video, options)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Debug: draw distance table on canvas
+      const drawDebugDistances = (dists) => {
+        if (!dists || !dists.length) return;
+        ctx.save();
+        ctx.font = 'bold 12px monospace';
+        const top5 = dists.slice(0, 5);
+        const panelH = top5.length * 20 + 16;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(8, h - panelH - 8, 280, panelH);
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Top matches (dist < 0.40 = match):', 14, h - panelH + 6);
+        top5.forEach((d, i) => {
+          const isMatch = d.distance <= THRESHOLD;
+          ctx.fillStyle = isMatch ? '#4ade80' : '#f87171';
+          ctx.fillText(`${d.name}: ${d.distance.toFixed(3)} ${isMatch ? '✓' : '✗'}`, 14, h - panelH + 20 + i * 18);
+        });
+        ctx.restore();
+      };
+
+      if (result) {
+        const box = result.detection.box;
+        const score = result.detection.score;
+
+        // Draw bounding box
+        ctx.strokeStyle = '#00c47a';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#00c47a';
+        ctx.shadowBlur = 14;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+        ctx.shadowBlur = 0;
+
+        // Corner brackets
+        const cl = Math.min(box.width, box.height) * 0.2;
+        ctx.strokeStyle = '#00c47a';
+        ctx.lineWidth = 2.5;
+        [[box.x, box.y, box.x+cl, box.y, box.x, box.y+cl],
+         [box.x+box.width-cl, box.y, box.x+box.width, box.y, box.x+box.width, box.y+cl],
+         [box.x, box.y+box.height-cl, box.x, box.y+box.height, box.x+cl, box.y+box.height],
+         [box.x+box.width-cl, box.y+box.height, box.x+box.width, box.y+box.height, box.x+box.width, box.y+box.height-cl]
+        ].forEach(([x1,y1,x2,y2,x3,y3]) => {
+          ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.stroke();
+        });
+
+        // Match against database
+        const { match, bestDistance, distances } = findBestMatch(result.descriptor);
+        drawDebugDistances(distances);
+        const accuracy = ((1 - (bestDistance ?? 1)) * 100).toFixed(1);
+
+        if (match) {
+          const label = match.name;
+          ctx.fillStyle = '#00c47a';
+          ctx.fillRect(box.x, box.y - 34, box.width, 32);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 14px Segoe UI';
+          ctx.fillText(`✓ ${label}`, box.x + 8, box.y - 13);
+
+          statusEl.textContent = `✅ RECOGNIZED: ${match.name}`;
+          statusEl.className = 'detected';
+
+          // Show match card
+          const card = document.getElementById('match-card');
+          card.classList.add('show');
+          document.getElementById('match-name').textContent = match.name;
+          document.getElementById('match-sub').textContent =
+            [match.studentNo, match.grade && `Grade ${match.grade}`, match.section].filter(Boolean).join(' · ');
+          document.getElementById('match-dist').textContent =
+            `${accuracy}% match`;
+
+          // Show photo
+          const photoEl = document.getElementById('match-photo');
+          const placeholderEl = document.getElementById('match-photo-placeholder');
+          if (match.photo) {
+            photoEl.src = match.photo;
+            photoEl.classList.remove('hidden');
+            placeholderEl.style.display = 'none';
+          } else {
+            photoEl.classList.add('hidden');
+            placeholderEl.style.display = 'flex';
+          }
+
+          // Trigger API Log
+          const token = localStorage.getItem('sams_token');
+          const nowMs = Date.now();
+          if (match.id && token && (!lastLogTime[match.id] || nowMs - lastLogTime[match.id] > 180000)) {
+            lastLogTime[match.id] = nowMs;
+            
+            fetch('http://localhost:5000/api/attendance/log', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                student_id: match.id,
+                log_type: logMode,
+                method: 'scanner'
+              })
+            }).then(res => res.json()).then(data => {
+               console.log('Automated test API log success:', data);
+            }).catch(err => {
+               console.error('Test API error:', err);
+               lastLogTime[match.id] = 0; // reset on error
+            });
+          }
+
+        } else {
+          ctx.fillStyle = 'rgba(239,68,68,0.85)';
+          ctx.fillRect(box.x, box.y - 34, box.width, 32);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 13px Segoe UI';
+          ctx.fillText('✕ Unknown Person', box.x + 8, box.y - 13);
+
+          statusEl.textContent = labeledDescriptors.length === 0
+            ? '⚠️ No registered students loaded yet'
+            : '❓ Unknown — not registered';
+          statusEl.className = '';
+          document.getElementById('match-card').classList.remove('show');
+        }
+
+        document.getElementById('stat-face').textContent = '✓ Yes';
+        document.getElementById('stat-conf').textContent = (score * 100).toFixed(1) + '%';
+      } else {
+        statusEl.textContent = '👤 No face detected — center your face';
+        statusEl.className = '';
+        document.getElementById('stat-face').textContent = 'No';
+        document.getElementById('stat-conf').textContent = '—';
+        document.getElementById('match-card').classList.remove('show');
+      }
+
+      setTimeout(detect, 200);
+    }
+
+    // ──────────────────────────────────────────────
+    // Init
+    // ──────────────────────────────────────────────
+    async function init() {
+      statusEl.textContent = '⏳ Loading face detection models...';
+      statusEl.className = 'loading';
+
+      try {
+        // Load all needed models
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+        ]);
+        console.log('✅ All face-api models loaded');
+
+        statusEl.textContent = '📷 Starting camera...';
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' }, audio: false
+        });
+        video.srcObject = stream;
+        video.play();
+
+        video.addEventListener('loadeddata', () => {
+          running = true;
+          statusEl.textContent = '👤 No face detected — position your face';
+          statusEl.className = '';
+          detect();
+        });
+
+        // Load registered students
+        await reloadStudents();
+      } catch (e) {
+        statusEl.textContent = '❌ Error: ' + e.message;
+        statusEl.className = 'error';
+        console.error(e);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

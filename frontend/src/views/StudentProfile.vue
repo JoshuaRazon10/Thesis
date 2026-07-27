@@ -124,7 +124,7 @@ onMounted(() => {
             <span class="phone-no">{{ parent.contact_no }}</span>
           </div>
           <p class="sms-notif-msg">
-            🔔 SAMS will automatically dispatch SMS notifications to this contact number during morning entry and afternoon departures.
+            🔔 The system will automatically dispatch SMS notifications to this contact number during morning entry and afternoon departures.
           </p>
         </div>
         <div v-else class="empty-parent-block">

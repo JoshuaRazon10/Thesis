@@ -8,7 +8,11 @@ const toastStore = useToastStore();
 
 const settings = ref({
   teacher_time_in: '08:00',
-  teacher_time_out: '17:00'
+  teacher_time_out: '17:00',
+  student_time_in: '07:30',
+  student_time_out: '16:00',
+  httpsms_api_key: '',
+  httpsms_sender_phone: ''
 });
 
 const loading = ref(false);
@@ -20,9 +24,17 @@ const loadSettings = async () => {
     if (res.success && res.data) {
       const timeIn = res.data.find((s: any) => s.setting_key === 'teacher_time_in');
       const timeOut = res.data.find((s: any) => s.setting_key === 'teacher_time_out');
+      const studTimeIn = res.data.find((s: any) => s.setting_key === 'student_time_in');
+      const studTimeOut = res.data.find((s: any) => s.setting_key === 'student_time_out');
+      const apiKey = res.data.find((s: any) => s.setting_key === 'httpsms_api_key');
+      const senderPhone = res.data.find((s: any) => s.setting_key === 'httpsms_sender_phone');
       
       if (timeIn) settings.value.teacher_time_in = timeIn.setting_value;
       if (timeOut) settings.value.teacher_time_out = timeOut.setting_value;
+      if (studTimeIn) settings.value.student_time_in = studTimeIn.setting_value;
+      if (studTimeOut) settings.value.student_time_out = studTimeOut.setting_value;
+      if (apiKey) settings.value.httpsms_api_key = apiKey.setting_value;
+      if (senderPhone) settings.value.httpsms_sender_phone = senderPhone.setting_value;
     }
   } catch (err) {
     console.error(err);
@@ -32,7 +44,7 @@ const loadSettings = async () => {
   }
 };
 
-const handleSave = async (key: 'teacher_time_in' | 'teacher_time_out') => {
+const handleSave = async (key: 'teacher_time_in' | 'teacher_time_out' | 'student_time_in' | 'student_time_out' | 'httpsms_api_key' | 'httpsms_sender_phone') => {
   try {
     const value = settings.value[key];
     const res = await api.put(`/settings/${key}`, { value });
@@ -49,6 +61,70 @@ const handleSave = async (key: 'teacher_time_in' | 'teacher_time_out') => {
 
 const triggerBackup = () => {
   toastStore.showToast('Database backup initiated! SQL export file is compiling in the background.', 'info');
+};
+
+const triggerTestSms = async () => {
+  const targetPhone = prompt("Enter the phone number to send the test SMS to (e.g. +639...):", settings.value.httpsms_sender_phone);
+  if (!targetPhone) return;
+
+  try {
+    const res = await api.post('/settings/test-sms', { 
+      sender: settings.value.httpsms_sender_phone,
+      target: targetPhone
+    });
+    if (res.success) {
+      toastStore.showToast(`Test SMS queued to ${targetPhone}! Check the phone.`, 'success');
+    } else {
+      toastStore.showToast(res.message || 'Failed to send test SMS', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    toastStore.showToast('Error sending test SMS', 'error');
+  }
+};
+
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+});
+const passwordLoading = ref(false);
+
+const handleChangePassword = async () => {
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    toastStore.showToast('All password fields are required.', 'error');
+    return;
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    toastStore.showToast('New passwords do not match.', 'error');
+    return;
+  }
+  if (passwordForm.value.newPassword.length < 6) {
+    toastStore.showToast('New password must be at least 6 characters long.', 'warning');
+    return;
+  }
+
+  passwordLoading.value = true;
+  try {
+    const res = await api.post('/auth/change-password', {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword
+    });
+
+    if (res.success) {
+      toastStore.showToast('Password changed successfully!', 'success');
+      passwordForm.value.currentPassword = '';
+      passwordForm.value.newPassword = '';
+      passwordForm.value.confirmPassword = '';
+    } else {
+      toastStore.showToast(res.message || 'Failed to change password.', 'error');
+    }
+  } catch (err: any) {
+    console.error(err);
+    toastStore.showToast('Error changing password.', 'error');
+  } finally {
+    passwordLoading.value = false;
+  }
 };
 
 onMounted(() => {
@@ -92,6 +168,105 @@ onMounted(() => {
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- SMS Settings card -->
+        <div class="card settings-card">
+          <h3 class="card-title">📱 HttpSMS Configuration</h3>
+          <p class="card-desc">Configure your HttpSMS Account API Key to automatically send notifications to parents.</p>
+          <div class="divider" style="margin: 20px 0;" />
+
+          <div class="form-fields">
+            <div class="setting-row">
+              <div class="input-block">
+                <label class="form-label" for="api_key">Account API Key</label>
+                <input id="api_key" type="password" class="form-input" v-model="settings.httpsms_api_key" placeholder="Enter your HttpSMS Account API Key" />
+              </div>
+              <button @click="handleSave('httpsms_api_key')" class="btn btn-primary">
+                Save
+              </button>
+            </div>
+
+            <div class="setting-row" style="margin-top: 20px;">
+              <div class="input-block">
+                <label class="form-label" for="sender_phone">Sender Phone Number</label>
+                <input id="sender_phone" type="text" class="form-input" v-model="settings.httpsms_sender_phone" placeholder="e.g. +639123456789" />
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button @click="triggerTestSms" class="btn btn-secondary">
+                  Test Connection
+                </button>
+                <button @click="handleSave('httpsms_sender_phone')" class="btn btn-primary">
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Settings card -->
+        <div class="card settings-card" style="margin-top: 32px;">
+          <h3 class="card-title">⏰ Student Class Schedule</h3>
+          <p class="card-desc">Set the official daily check-in threshold for students. Log entries recorded past Time In will trigger late marks.</p>
+          <div class="divider" style="margin: 20px 0;" />
+
+          <div class="form-fields">
+            <div class="setting-row">
+              <div class="input-block">
+                <label class="form-label" for="student_time_in">Scheduled Time In</label>
+                <input id="student_time_in" type="time" class="form-input" v-model="settings.student_time_in" />
+              </div>
+              <button @click="handleSave('student_time_in')" class="btn btn-primary">
+                Save
+              </button>
+            </div>
+
+            <div class="setting-row" style="margin-top: 20px;">
+              <div class="input-block">
+                <label class="form-label" for="student_time_out">Scheduled Time Out</label>
+                <input id="student_time_out" type="time" class="form-input" v-model="settings.student_time_out" />
+              </div>
+              <button @click="handleSave('student_time_out')" class="btn btn-primary">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="card settings-card" style="margin-top: 32px;">
+          <h3 class="card-title">🔒 Change Administrator Password</h3>
+          <p class="card-desc">Update the password for the system administrator account.</p>
+          <div class="divider" style="margin: 20px 0;" />
+
+          <form @submit.prevent="handleChangePassword" class="form-fields">
+            <div class="setting-row">
+              <div class="input-block">
+                <label class="form-label" for="current_password">Current Password</label>
+                <input id="current_password" type="password" class="form-input" v-model="passwordForm.currentPassword" placeholder="Enter current password" required />
+              </div>
+            </div>
+
+            <div class="setting-row" style="margin-top: 20px;">
+              <div class="input-block">
+                <label class="form-label" for="new_password">New Password</label>
+                <input id="new_password" type="password" class="form-input" v-model="passwordForm.newPassword" placeholder="Min. 6 characters" required />
+              </div>
+            </div>
+
+            <div class="setting-row" style="margin-top: 20px;">
+              <div class="input-block">
+                <label class="form-label" for="confirm_password">Confirm New Password</label>
+                <input id="confirm_password" type="password" class="form-input" v-model="passwordForm.confirmPassword" placeholder="Re-type new password" required />
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+              <button type="submit" class="btn btn-primary" :disabled="passwordLoading">
+                {{ passwordLoading ? 'Updating...' : 'Update Password' }}
+              </button>
+            </div>
+          </form>
         </div>
 
         <!-- Backup Settings Card -->

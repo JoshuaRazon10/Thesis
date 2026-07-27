@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth';
-import { computed } from 'vue';
+// Removed unused import
 
 defineProps<{
   title: string;
@@ -11,14 +11,7 @@ const authStore = useAuthStore();
 const now = new Date();
 const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-const initials = computed(() => {
-  const name = authStore.user?.full_name || '';
-  const parts = name.split(' ').filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-});
+// Removed unused initials
 </script>
 
 <template>
@@ -29,13 +22,11 @@ const initials = computed(() => {
     </div>
     <div class="right">
       <div class="datePill">
-        <span>📅</span>
+        <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
         {{ dateStr }}
       </div>
       <div class="userPill">
-        <div class="pillAvatar">
-          {{ initials }}
-        </div>
+        <img src="/images/chcc_circle.png" alt="User Avatar" class="pillAvatar" style="object-fit: cover;" />
         <span class="pillName">{{ authStore.user?.full_name?.split(' ')[0] }}</span>
       </div>
     </div>

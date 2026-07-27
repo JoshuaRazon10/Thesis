@@ -70,9 +70,8 @@ router.post('/generate', async (req, res) => {
         gross_pay: parseFloat(record.gross_pay)
       },
       deductions: {
-        late_deduction: parseFloat(record.late_deduction),
-        absent_deduction: parseFloat(record.absent_deduction),
-        total_deductions: parseFloat(record.late_deduction) + parseFloat(record.absent_deduction)
+        details: typeof record.deductions_details === 'string' ? JSON.parse(record.deductions_details) : (record.deductions_details || []),
+        total_deductions: parseFloat(record.total_deductions)
       },
       summary: {
         days_worked: record.days_worked,

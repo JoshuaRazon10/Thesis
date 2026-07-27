@@ -61,7 +61,25 @@ const fetchRawLogs = async () => {
   try {
     const res = await api.get('/attendance/logs');
     if (res.success) {
-      rawLogs.value = res.data;
+      rawLogs.value = (res.data || []).map((log: any) => {
+        let fullName = 'Unknown';
+        let role = 'Unknown';
+        if (log.student_id) {
+          fullName = `${log.student_last_name || ''}, ${log.student_first_name || ''}`;
+          role = 'Student';
+        } else if (log.teacher_id) {
+          fullName = `${log.teacher_last_name || ''}, ${log.teacher_first_name || ''}`;
+          role = 'Teacher';
+        } else if (log.guard_id) {
+          fullName = log.guard_name || 'Guard';
+          role = 'Guard';
+        }
+        return {
+          ...log,
+          full_name: fullName,
+          role: role
+        };
+      });
     }
   } catch (err) {
     console.error('Failed to load raw logs:', err);
@@ -214,12 +232,12 @@ onBeforeUnmount(() => {
           <span class="time-text">{{ formatDate(value) }} {{ formatTime(value) }}</span>
         </template>
         <template #cell(log_type)="{ value }">
-          <span class="log-badge" :class="value.toLowerCase()">
+          <span class="log-badge" :class="value ? value.toLowerCase() : ''">
             {{ value === 'IN' ? '📥 Time In' : '📤 Time Out' }}
           </span>
         </template>
         <template #cell(role)="{ value }">
-          <span class="role-badge" :class="value.toLowerCase()">{{ value }}</span>
+          <span class="role-badge" :class="value ? value.toLowerCase() : ''">{{ value || 'Unknown' }}</span>
         </template>
         <template #cell(guard_id)="{ value }">
           {{ value ? `Guard ID #${value}` : 'Autoscan Gate' }}

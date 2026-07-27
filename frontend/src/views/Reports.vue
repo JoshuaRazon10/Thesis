@@ -58,7 +58,7 @@ const exportCSV = async () => {
       const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', `SAMS_Attendance_Report_${reportType.value}_${selectedDate.value}.csv`);
+      link.setAttribute('download', `Attendance_Report_${reportType.value}_${selectedDate.value}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -86,7 +86,7 @@ const generateClientCSV = () => {
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `SAMS_Attendance_Report_${reportType.value}.csv`);
+  link.setAttribute("download", `Attendance_Report_${reportType.value}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -109,7 +109,7 @@ const formatDate = (dateStr: string) => {
     <!-- Print Only Letterhead -->
     <div class="print-letterhead print-only">
       <div class="letterhead-title">BASIC EDUCATION OF CONCEPCION HOLY CROSS COLLEGE, INC.</div>
-      <div class="letterhead-motto">Student Attendance Monitoring System (SAMS)</div>
+      <div class="letterhead-motto">Student Attendance Monitoring System</div>
       <div class="letterhead-sub">Concepcion, Tarlac, Philippines</div>
       <div class="divider" style="margin: 16px 0;" />
     </div>

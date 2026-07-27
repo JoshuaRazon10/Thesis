@@ -148,7 +148,7 @@ onMounted(() => {
         <!-- School info sidebar card -->
         <div class="card info-sidebar">
           <div class="branding-header">
-            <span class="badge gold">CHCC SAMS</span>
+            <span class="badge gold">CHCC Portal</span>
             <h3>Basic Education Portal</h3>
             <p class="school-motto">Concepcion Holy Cross College, Inc.</p>
           </div>

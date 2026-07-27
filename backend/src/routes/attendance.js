@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const { sendHttpSMS } = require('../utils/smsUtils');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -87,7 +88,7 @@ router.get('/logs', async (req, res) => {
     const { date, student_id, teacher_id } = req.query;
     let sql = `SELECT al.*,
                  s.student_no, s.first_name AS student_first_name, s.last_name AS student_last_name,
-                 t.first_name AS teacher_first_name, t.last_name AS teacher_last_name,
+                 t.first_name AS teacher_first_name, t.last_name AS teacher_last_name, t.role AS teacher_role,
                  g.full_name AS guard_name
                FROM tbl_attendance_logs al
                LEFT JOIN tbl_students s ON al.student_id = s.student_id
@@ -112,7 +113,27 @@ router.get('/logs', async (req, res) => {
     sql += ' ORDER BY al.log_time DESC';
     const rows = await db.query(sql, params);
 
-    res.json({ success: true, data: rows });
+    const formattedRows = rows.map(log => {
+      let fullName = 'Unknown';
+      let role = 'System';
+      if (log.student_id) {
+        fullName = `${log.student_last_name}, ${log.student_first_name}`;
+        role = 'Student';
+      } else if (log.teacher_id) {
+        fullName = `${log.teacher_last_name}, ${log.teacher_first_name}`;
+        role = log.teacher_role || 'Teacher';
+      } else if (log.guard_id) {
+        fullName = log.guard_name || `Guard #${log.guard_id}`;
+        role = 'Guard';
+      }
+      return {
+        ...log,
+        full_name: fullName,
+        role: role
+      };
+    });
+
+    res.json({ success: true, data: formattedRows });
   } catch (err) {
     console.error('List logs error:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch attendance logs.' });
@@ -155,6 +176,35 @@ router.post('/log', async (req, res) => {
           `UPDATE tbl_attendance_records SET time_out = NOW() WHERE student_id = ? AND attendance_date = ?`,
           [student_id, today]
         );
+      }
+
+      // -- SMS Integration --
+      try {
+        const parents = await db.query(
+          'SELECT p.parent_id, p.contact_no, p.guardian_name, s.first_name, s.last_name FROM tbl_parents p JOIN tbl_students s ON p.student_id = s.student_id WHERE s.student_id = ?',
+          [student_id]
+        );
+        
+        if (parents.length > 0 && parents[0].contact_no) {
+          const parent = parents[0];
+          const timeFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: 'numeric', hour12: true }).format(new Date());
+          
+          let smsMessage = '';
+          if (log_type === 'IN') {
+            smsMessage = `[CHCC] Dear Parent/Guardian ${parent.guardian_name}, this is to inform you that ${parent.first_name} ${parent.last_name} arrived safely at school today at ${timeFormat}. Thank you.`;
+          } else {
+            smsMessage = `[CHCC] Dear Parent/Guardian, ${parent.first_name} ${parent.last_name} has left the school premises at ${timeFormat}. Thank you.`;
+          }
+
+          const smsRes = await db.query(
+            'INSERT INTO tbl_sms_notifications (parent_id, attendance_id, message, recipient_phone, status) VALUES (?, NULL, ?, ?, ?)',
+            [parent.parent_id, smsMessage, parent.contact_no, 'pending']
+          );
+          
+          sendHttpSMS(smsRes.insertId, parent.contact_no, smsMessage);
+        }
+      } catch (smsErr) {
+        console.error('Error queuing auto SMS:', smsErr);
       }
     }
 

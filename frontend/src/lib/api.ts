@@ -21,6 +21,15 @@ async function apiFetch(path: string, options: RequestInit = {}) {
     const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+      
+      // Auto-logout if token is expired or invalid
+      if (res.status === 401 || res.status === 403) {
+        if (errorData.message?.toLowerCase().includes('token') || errorData.message?.toLowerCase().includes('access denied')) {
+          localStorage.removeItem('sams_token');
+          window.location.href = '/';
+        }
+      }
+
       return { success: false, message: errorData.message || `API error: ${res.status} ${res.statusText}` };
     }
     return await res.json();

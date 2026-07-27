@@ -33,7 +33,8 @@ const loadData = async () => {
     if (payslipRes.success) {
       payslips.value = payslipRes.data.map((p: any) => ({
         ...p,
-        teacher_name: `${p.last_name}, ${p.first_name}`
+        teacher_name: `${p.last_name}, ${p.first_name}`,
+        parsed_data: typeof p.payslip_data === 'string' ? JSON.parse(p.payslip_data) : (p.payslip_data || {})
       }));
     }
 
@@ -60,6 +61,10 @@ const handlePrint = (payslip: any) => {
 
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
+const formatDailyDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
 };
 
 const filteredPayslips = computed(() => {
@@ -123,9 +128,12 @@ onMounted(() => {
         <div class="payslip-box" v-if="activePayslip">
           <!-- Letterhead -->
           <div class="school-letterhead">
-            <div class="school-title">BASIC EDUCATION OF CONCEPCION HOLY CROSS COLLEGE, INC.</div>
-            <div class="school-sub">Concepcion, Tarlac, Philippines</div>
-            <div class="system-tag">Teacher Salary Statement / Payslip</div>
+            <img src="/images/chcc_circle.png" alt="CHCC Logo" class="print-logo" />
+            <div class="letterhead-text">
+              <div class="school-title">BASIC EDUCATION OF CONCEPCION HOLY CROSS COLLEGE, INC.</div>
+              <div class="school-sub">Concepcion, Tarlac, Philippines</div>
+              <div class="system-tag">Teacher Salary Statement / Payslip</div>
+            </div>
           </div>
           <div class="divider" />
 
@@ -151,6 +159,17 @@ onMounted(() => {
 
           <div class="divider" />
 
+          <!-- Daily Hours Breakdown -->
+          <div v-if="activePayslip.parsed_data?.summary?.daily_logs?.length > 0">
+            <h4 class="col-title" style="border-bottom: none; margin-bottom: 4px;">📅 Daily Hours Breakdown</h4>
+            <div class="daily-hours-list">
+              <span class="daily-hour-pill" v-for="log in activePayslip.parsed_data.summary.daily_logs" :key="log.log_date">
+                {{ formatDailyDate(log.log_date) }} ({{ Number(log.hours_worked).toFixed(1) }} hrs)
+              </span>
+            </div>
+            <div class="divider" />
+          </div>
+
           <!-- Breakdown -->
           <div class="breakdown-columns">
             <!-- Earnings -->
@@ -158,11 +177,11 @@ onMounted(() => {
               <h4 class="col-title">Earnings Breakdown</h4>
               <div class="item-line">
                 <span>Regular Hours Work:</span>
-                <span>{{ Number(activePayslip.regular_hours).toFixed(1) }} hrs</span>
+                <span>{{ Number(activePayslip.parsed_data?.earnings?.regular_hours || 0).toFixed(1) }} hrs</span>
               </div>
               <div class="item-line">
                 <span>Overtime Hours Work:</span>
-                <span>{{ Number(activePayslip.overtime_hours).toFixed(1) }} hrs (1.25x)</span>
+                <span>{{ Number(activePayslip.parsed_data?.earnings?.overtime_hours || 0).toFixed(1) }} hrs (1.25x)</span>
               </div>
               <div class="item-line total-item">
                 <span>Gross Earnings:</span>
@@ -173,17 +192,20 @@ onMounted(() => {
             <!-- Deductions -->
             <div class="column-section">
               <h4 class="col-title text-danger">Deductions</h4>
-              <div class="item-line">
-                <span>Late Deductions:</span>
-                <span class="text-danger">-₱{{ Number(activePayslip.late_deduction).toFixed(2) }}</span>
+              
+              <div class="item-line" v-for="(ded, i) in (activePayslip.parsed_data?.deductions?.details || [])" :key="i">
+                <span>{{ ded.name }}:</span>
+                <span class="text-danger">-₱{{ Number(ded.amount).toFixed(2) }}</span>
               </div>
-              <div class="item-line">
-                <span>Absent Deductions:</span>
-                <span class="text-danger">-₱{{ Number(activePayslip.absent_deduction).toFixed(2) }}</span>
+              
+              <div class="item-line" v-if="!activePayslip.parsed_data?.deductions?.details?.length">
+                <span>None</span>
+                <span class="text-danger">₱0.00</span>
               </div>
+
               <div class="item-line total-item">
                 <span>Total Deductions:</span>
-                <span class="text-danger">₱{{ (Number(activePayslip.late_deduction) + Number(activePayslip.absent_deduction)).toFixed(2) }}</span>
+                <span class="text-danger">₱{{ Number(activePayslip.parsed_data?.deductions?.total_deductions || 0).toFixed(2) }}</span>
               </div>
             </div>
           </div>
@@ -316,7 +338,22 @@ onMounted(() => {
 }
 
 .school-letterhead {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.print-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.letterhead-text {
+  text-align: left;
 }
 
 .school-title {
@@ -412,10 +449,10 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--secondary);
+  background: #f8fafc;
   padding: 16px 20px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(30, 58, 95, 0.15);
+  border: 2px solid var(--primary-dark);
 }
 
 .net-title {
@@ -426,7 +463,7 @@ onMounted(() => {
 
 .net-amount {
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 950;
   color: var(--primary-dark);
 }
 
@@ -486,7 +523,27 @@ onMounted(() => {
     display: none !important;
   }
   .net-salary-block {
-    background: #eaeaea !important;
+    background: #f8fafc !important;
+    border: 2px solid #1e3a5f !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+}
+
+.daily-hours-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.daily-hour-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
 }
 </style>

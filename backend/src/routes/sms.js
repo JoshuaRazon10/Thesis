@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const { sendHttpSMS } = require('../utils/smsUtils');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -65,14 +66,14 @@ router.post('/send', async (req, res) => {
       `[Basic Education of Concepcion Holy Cross College, Inc.] ` +
       `Dear ${parent.guardian_name}, your child ${parent.first_name} ${parent.last_name} has been marked present today. Thank you.`;
 
-    // Insert SMS record as pending (actual httpSMS integration to be added later)
+    // Insert SMS record as pending
     const result = await db.query(
       'INSERT INTO tbl_sms_notifications (parent_id, attendance_id, message, recipient_phone, status) VALUES (?, ?, ?, ?, ?)',
       [parent_id, attendance_id || null, smsMessage, parent.contact_no, 'pending']
     );
 
-    // TODO: Implement actual httpSMS API call here
-    // const response = await fetch('https://api.httpsms.com/v1/messages/send', { ... });
+    // Call HttpSMS API in the background
+    sendHttpSMS(result.insertId, parent.contact_no, smsMessage);
 
     res.status(201).json({
       success: true,

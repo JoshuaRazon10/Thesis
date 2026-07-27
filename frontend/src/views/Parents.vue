@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Topbar from '@/components/Topbar.vue';
 import DataTable from '@/components/DataTable.vue';
+import WebcamCapture from '@/components/WebcamCapture.vue';
 import { api } from '@/lib/api';
 import { useToastStore } from '@/stores/toast';
 
@@ -22,11 +23,52 @@ const showModal = ref(false);
 const isEditing = ref(false);
 const editingId = ref<number | null>(null);
 
+// Searchable student dropdown
+const studentSearch = ref('');
+const showStudentDropdown = ref(false);
+
+const filteredStudents = computed(() => {
+  const q = studentSearch.value.toLowerCase().trim();
+  if (!q) return students.value;
+  return students.value.filter((s: any) => {
+    const full = `${s.student_no} ${s.last_name} ${s.first_name} ${s.grade_level || ''} ${s.section || ''}`.toLowerCase();
+    return full.includes(q);
+  });
+});
+
+const selectedStudentLabel = computed(() => {
+  if (!form.value.student_id) return '';
+  const s = students.value.find((st: any) => String(st.student_id) === String(form.value.student_id));
+  if (!s) return '';
+  return `${s.last_name}, ${s.first_name} (${s.student_no}) - ${s.grade_level || ''} ${s.section || ''}`;
+});
+
+function selectStudent(s: any) {
+  form.value.student_id = String(s.student_id);
+  studentSearch.value = `${s.last_name}, ${s.first_name} (${s.student_no})`;
+  showStudentDropdown.value = false;
+}
+
+function onStudentSearchFocus() {
+  showStudentDropdown.value = true;
+}
+
+function onStudentSearchBlur() {
+  // Delay to allow click on dropdown item
+  setTimeout(() => { showStudentDropdown.value = false; }, 200);
+}
+
 const form = ref({
   student_id: '',
   guardian_name: '',
-  contact_no: ''
+  contact_no: '',
+  face_encoding: '',
+  face_descriptor: null as number[] | null
 });
+
+const handleFaceDescriptor = (descriptor: number[]) => {
+  form.value.face_descriptor = descriptor.length > 0 ? descriptor : null;
+};
 
 const loadData = async () => {
   loading.value = true;
@@ -59,8 +101,11 @@ const openRegisterModal = () => {
   form.value = {
     student_id: '',
     guardian_name: '',
-    contact_no: ''
+    contact_no: '',
+    face_encoding: '',
+    face_descriptor: null
   };
+  studentSearch.value = '';
   showModal.value = true;
 };
 
@@ -70,8 +115,13 @@ const openEditModal = (parent: any) => {
   form.value = {
     student_id: String(parent.student_id),
     guardian_name: parent.guardian_name,
-    contact_no: parent.contact_no
+    contact_no: parent.contact_no,
+    face_encoding: parent.face_encoding || '',
+    face_descriptor: null
   };
+  // Pre-fill search with current linked student
+  const s = students.value.find((st: any) => String(st.student_id) === String(parent.student_id));
+  studentSearch.value = s ? `${s.last_name}, ${s.first_name} (${s.student_no})` : '';
   showModal.value = true;
 };
 
@@ -81,7 +131,10 @@ const handleSubmit = async () => {
     if (isEditing.value && editingId.value) {
       res = await api.put(`/parents/${editingId.value}`, form.value);
     } else {
-      res = await api.post('/parents', form.value);
+      res = await api.post('/parents', {
+        ...form.value,
+        face_descriptor: form.value.face_descriptor ?? null
+      });
     }
 
     if (res.success) {
@@ -193,12 +246,51 @@ onMounted(() => {
 
             <div class="form-group">
               <label for="student_id" class="form-label">Link Student Profile</label>
-              <select id="student_id" v-model="form.student_id" class="form-input" required>
-                <option value="">Select student to link...</option>
-                <option v-for="s in students" :key="s.student_id" :value="s.student_id">
-                  {{ s.last_name }}, {{ s.first_name }} ({{ s.student_no }}) - {{ s.grade_level }} {{ s.section }}
-                </option>
-              </select>
+              <div class="student-search-wrapper">
+                <input
+                  id="student_id"
+                  type="text"
+                  class="form-input"
+                  v-model="studentSearch"
+                  placeholder="Search by Student ID, name, grade..."
+                  @focus="onStudentSearchFocus"
+                  @blur="onStudentSearchBlur"
+                  autocomplete="off"
+                />
+                <div v-if="showStudentDropdown" class="student-dropdown">
+                  <div v-if="filteredStudents.length === 0" class="student-dropdown-empty">
+                    No students found
+                  </div>
+                  <div
+                    v-for="s in filteredStudents"
+                    :key="s.student_id"
+                    class="student-dropdown-item"
+                    :class="{ active: String(s.student_id) === String(form.student_id) }"
+                    @mousedown.prevent="selectStudent(s)"
+                  >
+                    <span class="student-id-badge">{{ s.student_no }}</span>
+                    <span class="student-dropdown-name">{{ s.last_name }}, {{ s.first_name }}</span>
+                    <span class="student-dropdown-meta">{{ s.grade_level || '' }} {{ s.section || '' }}</span>
+                  </div>
+                </div>
+                <div v-if="form.student_id && !showStudentDropdown" class="selected-student-tag">
+                  ✅ {{ selectedStudentLabel }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Face Registration Webcam Capture -->
+            <div class="webcam-column">
+              <label class="form-label">🔍 Biometric Face Registration (Optional)</label>
+              <div class="webcam-frame">
+                <WebcamCapture
+                  v-model="form.face_encoding"
+                  @face-descriptor="handleFaceDescriptor"
+                />
+              </div>
+              <p class="webcam-tip">
+                <strong>Step 1:</strong> Center face in oval → <strong>Step 2:</strong> Blink eyes → Auto capture & save biometric data.
+              </p>
             </div>
           </div>
 
@@ -404,5 +496,85 @@ onMounted(() => {
 @keyframes pop {
   0% { transform: scale(0.9); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* Searchable student dropdown */
+.student-search-wrapper {
+  position: relative;
+}
+
+.student-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border: 1.5px solid var(--primary);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+}
+
+.student-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.student-dropdown-item:hover,
+.student-dropdown-item.active {
+  background: #eef2ff;
+}
+
+.student-dropdown-item.active {
+  font-weight: 700;
+}
+
+.student-id-badge {
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.student-dropdown-name {
+  flex: 1;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.student-dropdown-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.student-dropdown-empty {
+  padding: 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.selected-student-tag {
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
 </style>

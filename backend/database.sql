@@ -1,12 +1,4 @@
--- ============================================================
--- SAMS Database Schema
--- Student Attendance Monitoring System with Teacher Payroll
--- Basic Education of Concepcion Holy Cross College, Inc.
--- ============================================================
 
--- -----------------------------------------------------------
--- 1. tbl_admins
--- -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tbl_admins (
   admin_id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
@@ -196,8 +188,8 @@ CREATE TABLE IF NOT EXISTS tbl_payroll_records (
   overtime_hours DECIMAL(6,2) DEFAULT 0.00,
   hourly_rate DECIMAL(10,2) DEFAULT 0.00,
   gross_pay DECIMAL(12,2) DEFAULT 0.00,
-  late_deduction DECIMAL(12,2) DEFAULT 0.00,
-  absent_deduction DECIMAL(12,2) DEFAULT 0.00,
+  total_deductions DECIMAL(12,2) DEFAULT 0.00,
+  deductions_details JSON DEFAULT NULL,
   net_pay DECIMAL(12,2) DEFAULT 0.00,
   days_worked INT DEFAULT 0,
   days_absent INT DEFAULT 0,

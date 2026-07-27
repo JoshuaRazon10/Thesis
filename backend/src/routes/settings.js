@@ -2,9 +2,33 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const { sendHttpSMS } = require('../utils/smsUtils');
 
 // All routes require authentication
 router.use(authMiddleware);
+
+// POST /api/settings/test-sms - Test SMS connection
+router.post('/test-sms', async (req, res) => {
+  try {
+    const { sender, target } = req.body;
+    if (!target) {
+      return res.status(400).json({ success: false, message: 'Target phone number is required.' });
+    }
+
+    // Insert dummy record to test full flow
+    const smsRes = await db.query(
+      'INSERT INTO tbl_sms_notifications (parent_id, attendance_id, message, recipient_phone, status) VALUES (NULL, NULL, ?, ?, ?)',
+      ['[CHCC] This is a test SMS message to verify your HttpSMS integration is working correctly!', target, 'pending']
+    );
+
+    sendHttpSMS(smsRes.insertId, target, '[CHCC] This is a test SMS message to verify your HttpSMS integration is working correctly!');
+
+    res.json({ success: true, message: 'Test SMS queued successfully.' });
+  } catch (err) {
+    console.error('Test SMS error:', err);
+    res.status(500).json({ success: false, message: 'Failed to send test SMS.' });
+  }
+});
 
 // GET /api/settings - List all system settings
 router.get('/', async (req, res) => {

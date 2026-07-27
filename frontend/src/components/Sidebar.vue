@@ -4,17 +4,17 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
-  { href: '/students', label: 'Students', icon: '🎓' },
-  { href: '/parents', label: 'Parents & Guardians', icon: '👨‍👩‍👧' },
-  { href: '/guards', label: 'Staff & Guards', icon: '🛡️' },
-  { href: '/attendance', label: 'Attendance Logs', icon: '📋' },
-  { href: '/reports', label: 'Reports', icon: '📊' },
-  { href: '/teachers', label: 'Teachers', icon: '👩‍🏫' },
-  { href: '/payroll', label: 'Payroll', icon: '💰' },
-  { href: '/payslips', label: 'Payslips', icon: '📄' },
-  { href: '/sms-logs', label: 'SMS Logs', icon: '📱' },
-  { href: '/settings', label: 'System Settings', icon: '⚙️' },
+  { href: '/dashboard', label: 'Dashboard', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+  { href: '/students', label: 'Students', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>' },
+  { href: '/parents', label: 'Parents & Guardians', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
+  { href: '/guards', label: 'Staff & Guards', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
+  { href: '/attendance', label: 'Attendance Logs', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>' },
+  { href: '/reports', label: 'Reports', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>' },
+  { href: '/teachers', label: 'Teachers', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' },
+  { href: '/payroll', label: 'Payroll', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>' },
+  { href: '/payslips', label: 'Payslips', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>' },
+  { href: '/sms-logs', label: 'SMS Logs', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+  { href: '/settings', label: 'System Settings', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
 ];
 
 const authStore = useAuthStore();
@@ -51,11 +51,10 @@ const handleLogout = () => {
 
       <div class="header">
         <div class="logoWrapper">
-          <span class="logoText">CHCC</span>
+          <img src="/images/chcc_circle.png" alt="CHCC Logo" class="logoImage" />
         </div>
         <div class="branding">
           <div class="schoolName">Basic Education of Concepcion Holy Cross College, Inc.</div>
-          <div class="tagline">SAMS</div>
         </div>
       </div>
 
@@ -69,23 +68,21 @@ const handleLogout = () => {
           :class="['navItem', { active: route.path === item.href }]"
           @click="isOpen = false"
         >
-          <span class="navIcon">{{ item.icon }}</span>
+          <span class="navIcon" v-html="item.icon"></span>
           <span class="navText">{{ item.label }}</span>
         </router-link>
       </nav>
 
       <div class="bottom">
         <div class="studentCard">
-          <div class="studentAvatar">
-            {{ authStore.user?.full_name?.charAt(0) || 'A' }}
-          </div>
+          <img src="/images/chcc_circle.png" alt="Admin Avatar" class="studentAvatar" style="object-fit: cover;" />
           <div class="studentInfo">
             <div class="studentName">{{ authStore.user?.full_name }}</div>
             <div class="studentMeta">Administrator</div>
           </div>
         </div>
         <button class="logoutBtn" @click="handleLogout">
-          <span>👋</span> Sign Out
+          <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Sign Out
         </button>
       </div>
     </aside>
@@ -201,9 +198,8 @@ const handleLogout = () => {
 .logoWrapper {
   width: 96px;
   height: 96px;
-  background: #1e3a5f;
-  border: 4px solid #f5a623;
-  padding: 6px;
+  background: white;
+  border: 3px solid #f5a623;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -217,12 +213,12 @@ const handleLogout = () => {
   transform: translateY(-8px) rotate(3deg);
 }
 
-.logoText {
-  font-size: 28px;
-  font-weight: 900;
-  color: #f5a623;
-  letter-spacing: 3px;
-  font-family: 'Outfit', sans-serif;
+.logoImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .branding {
@@ -288,7 +284,7 @@ const handleLogout = () => {
 }
 
 .navItem.active .navIcon {
-  filter: none;
+  color: #1e3a5f;
 }
 
 .navIcon {
@@ -297,7 +293,6 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: grayscale(1) brightness(2);
 }
 
 .bottom {

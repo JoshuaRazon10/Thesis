@@ -20,10 +20,9 @@ const recordColumns = [
   { key: 'hourly_rate', label: 'Rate (₱)', sortable: false },
   { key: 'hours_worked', label: 'Regular/OT Hours', sortable: false },
   { key: 'gross_pay', label: 'Gross Pay', sortable: false },
-  { key: 'late_deduction', label: 'Late Ded.', sortable: false },
-  { key: 'absent_deduction', label: 'Absent Ded.', sortable: false },
+  { key: 'total_deductions', label: 'Total Deductions', sortable: false },
   { key: 'net_pay', label: 'Net Pay', sortable: false },
-  { key: 'actions', label: 'Edit', sortable: false, width: '80px' }
+  { key: 'actions', label: 'Actions', sortable: false, width: '160px' }
 ];
 
 const periods = ref<any[]>([]);
@@ -42,14 +41,59 @@ const periodForm = ref({
   end_date: ''
 });
 
+// View Computation Modal
+const showViewModal = ref(false);
+const viewingRecord = ref<any>(null);
+const dailyLogs = ref<any[]>([]);
+
+const openViewRecord = async (record: any) => {
+  viewingRecord.value = record;
+  dailyLogs.value = [];
+  // Parse deductions_details if it's a string
+  if (typeof record.deductions_details === 'string') {
+    try { viewingRecord.value.deductions_details = JSON.parse(record.deductions_details); } catch { viewingRecord.value.deductions_details = []; }
+  }
+  showViewModal.value = true;
+
+  try {
+    const res = await api.get(`/payroll/records/${record.payroll_id}/timelogs`);
+    if (res.success) {
+      dailyLogs.value = res.data || [];
+    }
+  } catch (err) {
+    console.error('Error loading timelogs:', err);
+  }
+};
+
+const formatDailyDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+const printComputation = () => {
+  window.print();
+};
+
+const handleSendSMS = async (payrollId: number) => {
+  try {
+    const res = await api.post(`/payroll/records/${payrollId}/send-sms`, {});
+    if (res.success) {
+      toastStore.showToast('Salary breakdown SMS sent to teacher!', 'success');
+    } else {
+      toastStore.showToast(res.message || 'Failed to send SMS', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    toastStore.showToast('Error sending SMS', 'error');
+  }
+};
+
 // Edit Record Modal
 const showRecordModal = ref(false);
 const editingRecord = ref<any>(null);
 const recordForm = ref({
   regular_hours: 0,
   overtime_hours: 0,
-  late_deduction: 0,
-  absent_deduction: 0,
+  total_deductions: 0,
   net_pay: 0
 });
 
@@ -120,7 +164,7 @@ const viewPeriodDetails = async (period: any) => {
   try {
     const res = await api.get(`/payroll/periods/${period.period_id}`);
     if (res.success) {
-      periodRecords.value = res.data.map((r: any) => ({
+      periodRecords.value = (res.data.records || []).map((r: any) => ({
         ...r,
         teacher_name: `${r.last_name}, ${r.first_name}`
       }));
@@ -138,8 +182,7 @@ const openEditRecord = (record: any) => {
   recordForm.value = {
     regular_hours: Number(record.regular_hours),
     overtime_hours: Number(record.overtime_hours),
-    late_deduction: Number(record.late_deduction),
-    absent_deduction: Number(record.absent_deduction),
+    total_deductions: Number(record.total_deductions),
     net_pay: Number(record.net_pay)
   };
   showRecordModal.value = true;
@@ -150,7 +193,7 @@ const recalculateFormNetPay = () => {
   if (!editingRecord.value) return;
   const rate = Number(editingRecord.value.hourly_rate) || 0;
   const gross = (recordForm.value.regular_hours * rate) + (recordForm.value.overtime_hours * rate * 1.25);
-  recordForm.value.net_pay = Math.max(0, gross - recordForm.value.late_deduction - recordForm.value.absent_deduction);
+  recordForm.value.net_pay = Math.max(0, gross - recordForm.value.total_deductions);
 };
 
 const handleSaveRecord = async () => {
@@ -299,24 +342,30 @@ onMounted(() => {
           <template #cell(gross_pay)="{ value }">
             ₱{{ Number(value).toFixed(2) }}
           </template>
-          <template #cell(late_deduction)="{ value }">
-            <span :class="{ 'deduct-text': Number(value) > 0 }">₱{{ Number(value).toFixed(2) }}</span>
-          </template>
-          <template #cell(absent_deduction)="{ value }">
+          <template #cell(total_deductions)="{ value }">
             <span :class="{ 'deduct-text': Number(value) > 0 }">₱{{ Number(value).toFixed(2) }}</span>
           </template>
           <template #cell(net_pay)="{ value }">
             <strong>₱{{ Number(value).toFixed(2) }}</strong>
           </template>
           <template #cell(actions)="{ item }">
-            <button
-              @click="openEditRecord(item)"
-              class="edit-row-btn"
-              :disabled="selectedPeriod.status !== 'draft'"
-              title="Edit Salary values manually"
-            >
-              ✏️
-            </button>
+            <div class="actions-wrapper">
+              <button
+                @click="openViewRecord(item)"
+                class="action-btn-sm details-btn"
+                title="View salary computation"
+              >
+                📄 View
+              </button>
+              <button
+                @click="openEditRecord(item)"
+                class="edit-row-btn"
+                :disabled="selectedPeriod.status !== 'draft'"
+                title="Edit Salary values manually"
+              >
+                ✏️
+              </button>
+            </div>
           </template>
         </DataTable>
       </div>
@@ -381,12 +430,8 @@ onMounted(() => {
 
             <div class="form-group-row">
               <div class="form-group">
-                <label for="late_ded" class="form-label">Late Deductions</label>
-                <input id="late_ded" type="number" step="0.01" class="form-input" v-model="recordForm.late_deduction" @input="recalculateFormNetPay" required />
-              </div>
-              <div class="form-group">
-                <label for="absent_ded" class="form-label">Absent Deductions</label>
-                <input id="absent_ded" type="number" step="0.01" class="form-input" v-model="recordForm.absent_deduction" @input="recalculateFormNetPay" required />
+                <label for="total_ded" class="form-label">Total Deductions (SSS, PhilHealth, etc.)</label>
+                <input id="total_ded" type="number" step="0.01" class="form-input" v-model="recordForm.total_deductions" @input="recalculateFormNetPay" required />
               </div>
             </div>
 
@@ -402,6 +447,136 @@ onMounted(() => {
             <button type="submit" class="btn btn-primary">Save Adjustments</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- View Computation Modal (Printable) -->
+    <div v-if="showViewModal && viewingRecord" class="modal-overlay computation-print-area">
+      <div class="modal-container card animate-pop computation-modal" style="max-width: 620px;">
+        <div class="modal-header no-print">
+          <h3>Salary Computation</h3>
+          <button @click="showViewModal = false" class="close-modal-btn">✕</button>
+        </div>
+
+        <!-- Printable Content -->
+        <div class="computation-content" id="printable-computation">
+          <div class="comp-letterhead">
+            <img src="/images/chcc_circle.png" alt="CHCC Logo" class="print-logo" />
+            <div class="letterhead-text">
+              <div class="comp-school">BASIC EDUCATION OF CONCEPCION HOLY CROSS COLLEGE, INC.</div>
+              <div class="comp-school-sub">Concepcion, Tarlac, Philippines</div>
+              <div class="comp-doc-title">SALARY COMPUTATION SLIP</div>
+            </div>
+          </div>
+          <div class="divider" />
+
+          <div class="comp-meta">
+            <div class="comp-meta-row">
+              <span class="comp-label">Teacher Name:</span>
+              <span class="comp-val"><strong>{{ viewingRecord.teacher_name }}</strong></span>
+            </div>
+            <div class="comp-meta-row">
+              <span class="comp-label">Payroll Period:</span>
+              <span class="comp-val">{{ selectedPeriod?.period_name }} ({{ formatDate(selectedPeriod?.start_date) }} – {{ formatDate(selectedPeriod?.end_date) }})</span>
+            </div>
+            <div class="comp-meta-row">
+              <span class="comp-label">Days Present:</span>
+              <span class="comp-val">{{ viewingRecord.days_worked }} day(s)</span>
+            </div>
+            <div class="comp-meta-row">
+              <span class="comp-label">Hourly Rate:</span>
+              <span class="comp-val">₱{{ Number(viewingRecord.hourly_rate).toFixed(2) }}</span>
+            </div>
+          </div>
+          <div class="divider" />
+
+          <!-- Daily Hours Breakdown -->
+          <div v-if="dailyLogs.length > 0">
+            <h4 class="comp-section-title">📅 Daily Hours Breakdown</h4>
+            <div class="daily-hours-list">
+              <span class="daily-hour-pill" v-for="log in dailyLogs" :key="log.log_date">
+                {{ formatDailyDate(log.log_date) }} ({{ Number(log.hours_worked).toFixed(1) }} hrs)
+              </span>
+            </div>
+            <div class="divider" />
+          </div>
+
+          <!-- Earnings Table -->
+          <h4 class="comp-section-title">💰 Earnings</h4>
+          <table class="comp-table">
+            <thead>
+              <tr><th>Description</th><th>Hours</th><th>Rate</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Regular Hours</td>
+                <td>{{ Number(viewingRecord.regular_hours).toFixed(1) }} hrs</td>
+                <td>₱{{ Number(viewingRecord.hourly_rate).toFixed(2) }}</td>
+                <td>₱{{ (Number(viewingRecord.regular_hours) * Number(viewingRecord.hourly_rate)).toFixed(2) }}</td>
+              </tr>
+              <tr v-if="Number(viewingRecord.overtime_hours) > 0">
+                <td>Overtime Hours (1.25×)</td>
+                <td>{{ Number(viewingRecord.overtime_hours).toFixed(1) }} hrs</td>
+                <td>₱{{ (Number(viewingRecord.hourly_rate) * 1.25).toFixed(2) }}</td>
+                <td>₱{{ (Number(viewingRecord.overtime_hours) * Number(viewingRecord.hourly_rate) * 1.25).toFixed(2) }}</td>
+              </tr>
+              <tr class="comp-total-row">
+                <td colspan="3"><strong>Gross Pay</strong></td>
+                <td><strong>₱{{ Number(viewingRecord.gross_pay).toFixed(2) }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Deductions Table -->
+          <h4 class="comp-section-title" style="margin-top: 20px;">📋 Deductions</h4>
+          <table class="comp-table">
+            <thead>
+              <tr><th>Type</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="(ded, idx) in (viewingRecord.deductions_details || [])" :key="idx">
+                <td>{{ ded.name }}</td>
+                <td class="text-danger">-₱{{ Number(ded.amount).toFixed(2) }}</td>
+              </tr>
+              <tr v-if="!viewingRecord.deductions_details?.length">
+                <td colspan="2" style="text-align:center; color: var(--text-muted);">No deductions</td>
+              </tr>
+              <tr class="comp-total-row">
+                <td><strong>Total Deductions</strong></td>
+                <td class="text-danger"><strong>-₱{{ Number(viewingRecord.total_deductions).toFixed(2) }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="divider" style="margin: 18px 0;" />
+
+          <!-- Net Pay -->
+          <div class="comp-net-block">
+            <span class="comp-net-label">NET PAY (Take-Home)</span>
+            <span class="comp-net-amount">₱{{ Number(viewingRecord.net_pay).toFixed(2) }}</span>
+          </div>
+
+          <!-- Signatures -->
+          <div class="comp-signatures">
+            <div class="comp-sig">
+              <div class="comp-sig-line"></div>
+              <span>Faculty Signature</span>
+            </div>
+            <div class="comp-sig">
+              <div class="comp-sig-line"></div>
+              <span>Authorized Signatory</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider no-print" style="margin: 16px 0;" />
+        <div class="form-actions no-print">
+          <button type="button" @click="showViewModal = false" class="btn btn-secondary">Close</button>
+          <button type="button" @click="handleSendSMS(viewingRecord.payroll_id)" class="btn btn-secondary" style="border-color: var(--primary); color: var(--primary);">
+            💬 Send SMS
+          </button>
+          <button type="button" @click="printComputation" class="btn btn-primary">🖨️ Print</button>
+        </div>
       </div>
     </div>
   </div>
@@ -717,5 +892,208 @@ onMounted(() => {
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+/* Computation View Modal */
+.computation-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.comp-letterhead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.print-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.letterhead-text {
+  text-align: left;
+}
+
+.comp-school {
+  font-size: 16.5px;
+  font-weight: 900;
+  color: var(--primary-dark);
+  letter-spacing: 0.02em;
+}
+
+.comp-school-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.comp-doc-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--primary);
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.comp-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.comp-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+}
+
+.comp-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.comp-val {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.comp-section-title {
+  font-size: 14px;
+  font-weight: 850;
+  color: var(--primary-dark);
+  margin: 12px 0 8px;
+}
+
+.comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.comp-table th {
+  background: #f1f5f9;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 800;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--divider);
+}
+
+.comp-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-weight: 600;
+}
+
+.comp-total-row td {
+  background: #f8fafc;
+  border-top: 2px solid var(--divider);
+  font-size: 14px;
+}
+
+.comp-net-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 16px 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--primary-dark);
+}
+
+.comp-net-label {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+
+.comp-net-amount {
+  font-size: 22px;
+  font-weight: 950;
+  color: var(--primary-dark);
+}
+
+.comp-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+.comp-sig {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.comp-sig-line {
+  width: 160px;
+  border-bottom: 1.5px solid #94a3b8;
+  margin-bottom: 4px;
+}
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .computation-print-area,
+  .computation-print-area * {
+    visibility: visible !important;
+  }
+  .computation-print-area {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: white !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 20px !important;
+  }
+  .computation-modal {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .comp-net-block {
+    background: #f8fafc !important;
+    border: 2px solid #1e3a5f !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.daily-hours-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.daily-hour-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
 }
 </style>

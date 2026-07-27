@@ -27,16 +27,10 @@ const form = ref({
   first_name: '',
   middle_name: '',
   role: '',
-  face_encoding: ''
-});
-
-// Set Salary Rate Modal
-const showRateModal = ref(false);
-const rateTeacherId = ref<number | null>(null);
-const rateTeacherName = ref('');
-const rateForm = ref({
+  contact_no: '',
+  face_encoding: '',
   hourly_rate: 0,
-  effective_date: new Date().toISOString().slice(0, 10)
+  deductions: [] as { deduction_type: string, deduction_name: string, amount: number }[]
 });
 
 const loadTeachers = async () => {
@@ -66,9 +60,24 @@ const openRegisterModal = () => {
     first_name: '',
     middle_name: '',
     role: '',
-    face_encoding: ''
+    contact_no: '',
+    face_encoding: '',
+    hourly_rate: 0,
+    deductions: []
   };
   showModal.value = true;
+};
+
+const addDeduction = () => {
+  form.value.deductions.push({
+    deduction_type: 'SSS',
+    deduction_name: '',
+    amount: 0
+  });
+};
+
+const removeDeduction = (index: number) => {
+  form.value.deductions.splice(index, 1);
 };
 
 const openEditModal = (teacher: any) => {
@@ -79,28 +88,24 @@ const openEditModal = (teacher: any) => {
     first_name: teacher.first_name,
     middle_name: teacher.middle_name || '',
     role: teacher.role,
-    face_encoding: teacher.face_encoding || ''
+    contact_no: teacher.contact_no || '',
+    face_encoding: teacher.face_encoding || '',
+    hourly_rate: teacher.hourly_rate ? parseFloat(String(teacher.hourly_rate).replace(/[^\d.]/g, '')) : 0,
+    deductions: teacher.deductions ? teacher.deductions.map((d: any) => ({
+      deduction_type: d.deduction_type,
+      deduction_name: d.deduction_name || '',
+      amount: parseFloat(d.amount)
+    })) : []
   };
   showModal.value = true;
 };
 
-const openRateModal = (teacher: any) => {
-  rateTeacherId.value = teacher.teacher_id;
-  rateTeacherName.value = teacher.full_name;
-  
-  // Extract number from ₱XX.XX/hr string
-  const currentRateVal = teacher.hourly_rate !== 'Not Set' 
-    ? parseFloat(teacher.hourly_rate.replace(/[^\d.]/g, '')) 
-    : 0;
-
-  rateForm.value = {
-    hourly_rate: currentRateVal,
-    effective_date: new Date().toISOString().slice(0, 10)
-  };
-  showRateModal.value = true;
-};
-
 const handleTeacherSubmit = async () => {
+  if (!form.value.face_encoding) {
+    toastStore.showToast('Biometric face registration is required.', 'error');
+    return;
+  }
+  
   try {
     let res;
     if (isEditing.value && editingId.value) {
@@ -122,22 +127,6 @@ const handleTeacherSubmit = async () => {
   }
 };
 
-const handleRateSubmit = async () => {
-  if (!rateTeacherId.value) return;
-  try {
-    const res = await api.post(`/teachers/${rateTeacherId.value}/salary`, rateForm.value);
-    if (res.success) {
-      toastStore.showToast('Salary rate updated successfully!', 'success');
-      showRateModal.value = false;
-      loadTeachers();
-    } else {
-      toastStore.showToast(res.message || 'Failed to set salary rate', 'error');
-    }
-  } catch (err) {
-    console.error(err);
-    toastStore.showToast('Error updating salary rate', 'error');
-  }
-};
 
 const handleDelete = async (id: number) => {
   if (!confirm('Are you sure you want to delete this teacher? This will remove all their salary records and time records.')) return;
@@ -189,9 +178,6 @@ onMounted(() => {
             <router-link :to="`/teachers/${item.teacher_id}/dtr`" class="btn-action view-btn">
               📅 DTR
             </router-link>
-            <button @click="openRateModal(item)" class="btn-action rate-btn">
-              ₱ Rate
-            </button>
             <button @click="openEditModal(item)" class="action-btn edit-btn" title="Edit Teacher">
               ✏️
             </button>
@@ -239,11 +225,64 @@ onMounted(() => {
                   <option value="Senior High School Department">Senior High School Department</option>
                 </select>
               </div>
+
+              <div class="form-group">
+                <label for="contact_no" class="form-label">Contact Number (SMS)</label>
+                <input id="contact_no" type="text" class="form-input" v-model="form.contact_no" placeholder="e.g. +639..." />
+              </div>
+            </div>
+
+            <!-- Salary & Deductions -->
+            <div class="divider" style="margin: 16px 0;" />
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="color: var(--primary-dark); margin: 0;">Salary & Deductions</h4>
+              <button type="button" @click="addDeduction" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                ➕ Add Salary Deduction
+              </button>
+            </div>
+            
+            <div class="form-grid" style="margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="hourly_rate" class="form-label">Hourly Rate (₱)</label>
+                <input id="hourly_rate" type="number" step="0.01" class="form-input" v-model="form.hourly_rate" />
+              </div>
+            </div>
+
+            <!-- Dynamic Deductions List -->
+            <div class="deductions-list" v-if="form.deductions.length > 0">
+              <div v-for="(deduction, index) in form.deductions" :key="index" class="deduction-row">
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label">Deduction Type</label>
+                  <select v-model="deduction.deduction_type" class="form-input" required>
+                    <option value="SSS">SSS</option>
+                    <option value="PhilHealth">PhilHealth</option>
+                    <option value="Pag-IBIG">Pag-IBIG</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+                
+                <div class="form-group" style="flex: 1;" v-if="deduction.deduction_type === 'Others'">
+                  <label class="form-label">Deduction Name</label>
+                  <input type="text" class="form-input" v-model="deduction.deduction_name" placeholder="e.g. Loan" required />
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label">Amount (₱)</label>
+                  <input type="number" step="0.01" class="form-input" v-model="deduction.amount" required />
+                </div>
+
+                <button type="button" @click="removeDeduction(index)" class="remove-btn" title="Remove Deduction">
+                  🗑️
+                </button>
+              </div>
+            </div>
+            <div v-else class="empty-deductions">
+              No deductions added. Click "Add Salary Deduction" to add one.
             </div>
 
             <!-- Face Registration Webcam Capture -->
             <div class="webcam-column">
-              <label class="form-label">Biometric Face Capture (Optional)</label>
+              <label class="form-label">Biometric Face Capture (Required) <span style="color: red;">*</span></label>
               <div class="webcam-frame">
                 <WebcamCapture v-model="form.face_encoding" />
               </div>
@@ -256,46 +295,6 @@ onMounted(() => {
             <button type="submit" class="btn btn-primary">
               {{ isEditing ? 'Save Details' : 'Confirm Registration' }}
             </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Salary Rate Modal -->
-    <div v-if="showRateModal" class="modal-overlay">
-      <div class="modal-container card animate-pop" style="max-width: 450px;">
-        <div class="modal-header">
-          <h3>Set Hourly Salary Rate</h3>
-          <button @click="showRateModal = false" class="close-modal-btn">✕</button>
-        </div>
-        <div class="divider" style="margin: 16px 0;" />
-        <p class="target-teacher-tag">Teacher: <strong>{{ rateTeacherName }}</strong></p>
-
-        <form @submit.prevent="handleRateSubmit" class="modal-form" style="margin-top: 16px;">
-          <div class="form-fields">
-            <div class="form-group">
-              <label for="hourly_rate" class="form-label">Hourly Pay Rate (PHP ₱)</label>
-              <input
-                id="hourly_rate"
-                type="number"
-                step="0.01"
-                class="form-input"
-                v-model="rateForm.hourly_rate"
-                placeholder="0.00"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="effective_date" class="form-label">Effective Date</label>
-              <input id="effective_date" type="date" class="form-input" v-model="rateForm.effective_date" required />
-            </div>
-          </div>
-
-          <div class="divider" style="margin: 24px 0 16px 0;" />
-          <div class="form-actions">
-            <button type="button" @click="showRateModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">Update Pay Rate</button>
           </div>
         </form>
       </div>
@@ -350,13 +349,62 @@ onMounted(() => {
 }
 
 .btn-secondary {
-  background: #f1f5f9;
+  background: white;
   color: var(--text-main);
   border: 1.5px solid var(--divider);
 }
 
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: #f1f5f9;
+  border-color: var(--primary-light);
+}
+
+.deductions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.deduction-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+}
+
+.empty-deductions {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 16px;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--divider);
+}
+
+.remove-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  border-radius: var(--radius-sm);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: var(--transition);
+}
+
+.remove-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
 }
 
 .actions-wrapper {

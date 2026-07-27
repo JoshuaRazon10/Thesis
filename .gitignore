@@ -5,3 +5,8 @@ dist/
 build/
 *.log
 backend/uploads/
+.npm-cache/
+**/ .npm-cache/
+**/.npm-cache/
+backend/set_key.js
+backend/debug_sms.js

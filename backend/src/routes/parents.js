@@ -6,6 +6,18 @@ const authMiddleware = require('../middleware/auth');
 // All routes require authentication
 router.use(authMiddleware);
 
+// Auto-migrate: ensure face columns exist
+(async () => {
+  try {
+    await db.query(`ALTER TABLE tbl_parents ADD COLUMN IF NOT EXISTS face_encoding LONGTEXT NULL`);
+    await db.query(`ALTER TABLE tbl_parents ADD COLUMN IF NOT EXISTS face_descriptor JSON NULL`);
+    console.log('✅ tbl_parents face columns ready');
+  } catch (e) {
+    // Columns may already exist — ignore
+    if (!e.message.includes('Duplicate column')) console.warn('Parent face migration note:', e.message);
+  }
+})();
+
 // GET /api/parents - List all parents (with student info joined)
 router.get('/', async (req, res) => {
   try {
@@ -45,7 +57,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/parents - Create parent
 router.post('/', async (req, res) => {
   try {
-    const { student_id, guardian_name, contact_no } = req.body;
+    const { student_id, guardian_name, contact_no, face_encoding, face_descriptor } = req.body;
 
     if (!student_id || !guardian_name || !contact_no) {
       return res.status(400).json({ success: false, message: 'Student ID, guardian name, and contact number are required.' });
@@ -58,8 +70,8 @@ router.post('/', async (req, res) => {
     }
 
     const result = await db.query(
-      'INSERT INTO tbl_parents (student_id, guardian_name, contact_no) VALUES (?, ?, ?)',
-      [student_id, guardian_name, contact_no]
+      'INSERT INTO tbl_parents (student_id, guardian_name, contact_no, face_encoding, face_descriptor) VALUES (?, ?, ?, ?, ?)',
+      [student_id, guardian_name, contact_no, face_encoding || null, face_descriptor ? JSON.stringify(face_descriptor) : null]
     );
 
     res.status(201).json({
@@ -76,11 +88,26 @@ router.post('/', async (req, res) => {
 // PUT /api/parents/:id - Update parent
 router.put('/:id', async (req, res) => {
   try {
-    const { student_id, guardian_name, contact_no } = req.body;
+    const { student_id, guardian_name, contact_no, face_encoding, face_descriptor } = req.body;
 
+    // Build dynamic update
+    const fields = [];
+    const values = [];
+
+    if (student_id !== undefined) { fields.push('student_id = ?'); values.push(student_id); }
+    if (guardian_name !== undefined) { fields.push('guardian_name = ?'); values.push(guardian_name); }
+    if (contact_no !== undefined) { fields.push('contact_no = ?'); values.push(contact_no); }
+    if (face_encoding !== undefined) { fields.push('face_encoding = ?'); values.push(face_encoding || null); }
+    if (face_descriptor !== undefined) { fields.push('face_descriptor = ?'); values.push(face_descriptor ? JSON.stringify(face_descriptor) : null); }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update.' });
+    }
+
+    values.push(req.params.id);
     const result = await db.query(
-      'UPDATE tbl_parents SET student_id = COALESCE(?, student_id), guardian_name = COALESCE(?, guardian_name), contact_no = COALESCE(?, contact_no) WHERE parent_id = ?',
-      [student_id, guardian_name, contact_no, req.params.id]
+      `UPDATE tbl_parents SET ${fields.join(', ')} WHERE parent_id = ?`,
+      values
     );
 
     if (result.affectedRows === 0) {

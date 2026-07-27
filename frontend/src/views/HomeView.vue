@@ -43,9 +43,7 @@ onMounted(() => {
     transition: 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s'
   }">
     <div :class="['splash-logo', { 'zoom-effect': phase === 'zoom' || phase === 'navigating' }]" style="margin-bottom: 32px">
-      <div class="logo-circle">
-        <span class="logo-text">CHCC</span>
-      </div>
+      <img src="/images/chcc_circle.png" alt="CHCC Logo" class="logo-image" />
     </div>
     
     <div :class="['branding-text', { 'zoom-effect': phase === 'zoom' || phase === 'navigating' }]" style="text-align: center">
@@ -66,24 +64,12 @@ onMounted(() => {
   transform: scale(10);
   opacity: 0;
 }
-
-.logo-circle {
+.logo-image {
   width: 180px;
   height: 180px;
+  display: block;
   border-radius: 50%;
-  background: #1e3a5f;
-  border: 6px solid #f5a623;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
   box-shadow: 0 25px 60px rgba(30, 58, 95, 0.25);
-}
-
-.logo-text {
-  font-size: 48px;
-  font-weight: 900;
-  color: #f5a623;
-  letter-spacing: 4px;
-  font-family: 'Outfit', sans-serif;
 }
 </style>

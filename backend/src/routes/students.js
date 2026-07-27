@@ -54,20 +54,24 @@ router.get('/:id', async (req, res) => {
 // POST /api/students - Create student
 router.post('/', async (req, res) => {
   try {
-    const { student_no, last_name, first_name, middle_name, section, grade_level } = req.body;
+    const { student_no, last_name, first_name, middle_name, section, grade_level, face_encoding, face_descriptor } = req.body;
 
     if (!student_no || !last_name || !first_name) {
       return res.status(400).json({ success: false, message: 'Student number, last name, and first name are required.' });
     }
 
+    if (!face_encoding) {
+      return res.status(400).json({ success: false, message: 'Biometric face registration is required. Please complete face verification.' });
+    }
+
     const result = await db.query(
-      'INSERT INTO tbl_students (student_no, last_name, first_name, middle_name, section, grade_level) VALUES (?, ?, ?, ?, ?, ?)',
-      [student_no, last_name, first_name, middle_name || null, section || null, grade_level || null]
+      'INSERT INTO tbl_students (student_no, last_name, first_name, middle_name, section, grade_level, face_encoding, face_descriptor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [student_no, last_name, first_name, middle_name || null, section || null, grade_level || null, face_encoding || null, face_descriptor ? JSON.stringify(face_descriptor) : null]
     );
 
     res.status(201).json({
       success: true,
-      message: 'Student created successfully.',
+      message: 'Student registered successfully.',
       data: { student_id: result.insertId, student_no, last_name, first_name, middle_name, section, grade_level }
     });
   } catch (err) {
