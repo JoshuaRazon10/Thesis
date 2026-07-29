@@ -457,8 +457,9 @@ onBeforeUnmount(() => stopWebcam());
     <!-- Captured Image Preview -->
     <div v-if="modelValue && !isActive" class="captured-card card-frame">
       <img :src="modelValue" alt="Captured face" class="captured-image" />
-      <button type="button" @click="() => { emit('update:modelValue', ''); emit('face-descriptor', []); }" class="retake-btn">
-        🔄 Retake Photo
+      <button type="button" @click="() => { emit('update:modelValue', ''); emit('face-descriptor', []); }" class="retake-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        <span>Retake Photo</span>
       </button>
     </div>
 

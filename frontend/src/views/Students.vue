@@ -14,6 +14,8 @@ const columns = [
   { key: 'first_name', label: 'First Name', sortable: true },
   { key: 'grade_level', label: 'Grade Level', sortable: true },
   { key: 'section', label: 'Section', sortable: true },
+  { key: 'guardian_name', label: 'Parent Name', sortable: true },
+  { key: 'contact_no', label: 'Parent Number', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, width: '150px' }
 ];
 
@@ -38,7 +40,9 @@ const form = ref({
   grade_level: '',
   section: '',
   face_encoding: '',
-  face_descriptor: null as number[] | null
+  face_descriptor: null as number[] | null,
+  guardian_name: '',
+  contact_no: ''
 });
 
 const loadStudents = async () => {
@@ -69,7 +73,9 @@ const openRegisterModal = () => {
     grade_level: '',
     section: '',
     face_encoding: '',
-    face_descriptor: null
+    face_descriptor: null,
+    guardian_name: '',
+    contact_no: ''
   };
   showModal.value = true;
 };
@@ -90,7 +96,9 @@ const openEditModal = (student: any) => {
     grade_level: student.grade_level || '',
     section: student.section || '',
     face_encoding: student.face_encoding || '',
-    face_descriptor: null
+    face_descriptor: null,
+    guardian_name: student.guardian_name || '',
+    contact_no: student.contact_no || ''
   };
   showModal.value = true;
 };
@@ -99,6 +107,11 @@ const handleSubmit = async () => {
   // Validate required fields
   if (!form.value.student_no || !form.value.last_name || !form.value.first_name) {
     toastStore.showToast('Please fill in Student No, Last Name, and First Name.', 'error');
+    return;
+  }
+
+  if (!form.value.guardian_name || !form.value.contact_no) {
+    toastStore.showToast('Please fill in Parent/Guardian Name and Contact Number.', 'error');
     return;
   }
 
@@ -327,6 +340,33 @@ onMounted(() => {
                     <option value="Archimedes">Archimedes</option>
                   </select>
                 </div>
+              </div>
+
+              <div class="divider" style="margin: 20px 0 16px 0;" />
+              <h4 style="margin-bottom: 12px; color: var(--primary-dark); font-weight: 800; font-size: 14px;">Parent / Guardian Contact Details</h4>
+
+              <div class="form-group">
+                <label for="guardian_name" class="form-label">Parent / Guardian Full Name</label>
+                <input
+                  id="guardian_name"
+                  type="text"
+                  class="form-input"
+                  v-model="form.guardian_name"
+                  placeholder="e.g. Maria Clara Santos"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="contact_no" class="form-label">Parent Contact Number (SMS Output)</label>
+                <input
+                  id="contact_no"
+                  type="text"
+                  class="form-input"
+                  v-model="form.contact_no"
+                  placeholder="e.g. +639123456789"
+                  required
+                />
               </div>
             </div>
 

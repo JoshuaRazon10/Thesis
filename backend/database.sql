@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS tbl_admins (
 
 -- Seed default admin (password: admin123)
 INSERT IGNORE INTO tbl_admins (admin_id, username, password_hash, full_name) VALUES
-(1, 'admin', '$2b$10$EpA8Eez.y.08s6mEetXQY.UeTfE6A1W.fOQhS/d8kI.qgUfE/Q2Y6', 'System Administrator');
+(1, 'admin@chcc.edu.ph', '$2b$10$EpA8Eez.y.08s6mEetXQY.UeTfE6A1W.fOQhS/d8kI.qgUfE/Q2Y6', 'System Administrator');
 
 -- -----------------------------------------------------------
 -- 2. tbl_students

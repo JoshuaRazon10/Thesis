@@ -57,8 +57,9 @@ onMounted(() => {
     <div class="controls-card card">
       <div class="header-row">
         <h2 class="section-title">SMS Outbox Queue</h2>
-        <button @click="loadSmsLogs" class="btn btn-secondary">
-          🔄 Refresh Logs
+        <button @click="loadSmsLogs" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>Refresh Logs</span>
         </button>
       </div>
       <p class="section-tip">

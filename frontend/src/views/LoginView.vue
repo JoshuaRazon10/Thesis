@@ -57,12 +57,12 @@ const handleSubmit = async () => {
 
         <form @submit.prevent="handleSubmit" class="form">
           <div class="form-group">
-            <label class="form-label" for="username">Username</label>
+            <label class="form-label" for="username">Email Address</label>
             <input
               id="username"
-              type="text"
+              type="email"
               class="form-input"
-              placeholder="Enter your username"
+              placeholder="e.g. admin@chcc.edu.ph"
               required
               v-model="username"
               autocomplete="username"

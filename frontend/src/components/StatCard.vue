@@ -21,7 +21,7 @@ defineProps<{
         <div class="header">
           <span class="card-title">{{ title }}</span>
           <div class="icon-badge">
-            <span class="icon-text">{{ icon }}</span>
+            <span class="icon-text" v-html="icon"></span>
           </div>
         </div>
         <div class="value-container">

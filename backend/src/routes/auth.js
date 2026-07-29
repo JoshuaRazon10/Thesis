@@ -14,13 +14,20 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username and password are required.' });
     }
 
-    // Only permit login from the 'admin' account
-    if (username !== 'admin') {
+    const normalizedUsername = username.toLowerCase().trim();
+
+    // Require email format to end with @gmail.com or @chcc.edu.ph
+    if (!normalizedUsername.endsWith('@gmail.com') && !normalizedUsername.endsWith('@chcc.edu.ph')) {
+      return res.status(400).json({ success: false, message: 'Login requires a Gmail or CHCC institutional Google Workspace account.' });
+    }
+
+    // Only permit login from the 'admin@chcc.edu.ph' account
+    if (normalizedUsername !== 'admin@chcc.edu.ph') {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
     // Secure database lookup using parameterized query (no SQL injection risk)
-    const rows = await db.query('SELECT * FROM tbl_admins WHERE username = ?', ['admin']);
+    const rows = await db.query('SELECT * FROM tbl_admins WHERE username = ?', [normalizedUsername]);
     const admin = rows[0];
 
     if (!admin) {

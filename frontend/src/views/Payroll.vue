@@ -273,23 +273,28 @@ onMounted(() => {
           <span class="badge" :class="value.toLowerCase()">{{ value }}</span>
         </template>
         <template #cell(actions)="{ item }">
-          <div class="actions-wrapper">
-            <button @click="viewPeriodDetails(item)" class="action-btn-sm details-btn">
-              👁️ View
+          <div class="actions-wrapper" style="display: flex; gap: 6px;">
+            <button @click="viewPeriodDetails(item)" class="action-btn-sm details-btn" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>View</span>
             </button>
             <button
               v-if="item.status === 'draft'"
               @click="handleGeneratePayroll(item.period_id)"
               class="action-btn-sm calc-btn"
+              style="display: inline-flex; align-items: center; gap: 4px;"
             >
-              🔄 Compute
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Compute</span>
             </button>
             <button
               v-if="item.status === 'draft'"
               @click="handleFinalizePeriod(item.period_id)"
               class="action-btn-sm lock-btn"
+              style="display: inline-flex; align-items: center; gap: 4px;"
             >
-              🔒 Lock
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Lock</span>
             </button>
           </div>
         </template>
@@ -310,8 +315,10 @@ onMounted(() => {
           v-if="selectedPeriod.status === 'draft' && periodRecords.length > 0"
           @click="handleFinalizePeriod(selectedPeriod.period_id)"
           class="btn btn-primary lock-big-btn"
+          style="display: inline-flex; align-items: center; gap: 8px;"
         >
-          🔒 Finalize & Post Payslips
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Finalize & Post Payslips</span>
         </button>
       </div>
       <div class="divider" style="margin: 20px 0;" />
@@ -349,21 +356,24 @@ onMounted(() => {
             <strong>₱{{ Number(value).toFixed(2) }}</strong>
           </template>
           <template #cell(actions)="{ item }">
-            <div class="actions-wrapper">
+            <div class="actions-wrapper" style="display: flex; gap: 6px;">
               <button
                 @click="openViewRecord(item)"
                 class="action-btn-sm details-btn"
                 title="View salary computation"
+                style="display: inline-flex; align-items: center; gap: 4px;"
               >
-                📄 View
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>View</span>
               </button>
               <button
                 @click="openEditRecord(item)"
                 class="edit-row-btn"
                 :disabled="selectedPeriod.status !== 'draft'"
                 title="Edit Salary values manually"
+                style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;"
               >
-                ✏️
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             </div>
           </template>

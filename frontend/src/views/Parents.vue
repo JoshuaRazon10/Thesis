@@ -126,6 +126,10 @@ const openEditModal = (parent: any) => {
 };
 
 const handleSubmit = async () => {
+  if (!isEditing.value && !form.value.face_encoding) {
+    toastStore.showToast('Biometric face registration is required for parents staying at school.', 'error');
+    return;
+  }
   try {
     let res;
     if (isEditing.value && editingId.value) {
@@ -174,17 +178,19 @@ onMounted(() => {
 
 <template>
   <div class="page-content">
-    <Topbar title="Parents & Guardians" subtitle="Basic Education of Concepcion Holy Cross College, Inc." />
+    <Topbar title="Parents (Staying at School)" subtitle="Basic Education of Concepcion Holy Cross College, Inc." />
 
     <div class="controls-card card">
       <div class="header-row">
-        <h2 class="section-title">Guardian Directory</h2>
+        <h2 class="section-title">Residing Parents / Guardians</h2>
         <button @click="openRegisterModal" class="btn btn-primary">
-          ➕ Register Guardian
+          ➕ Register Staying Parent
         </button>
       </div>
       <p class="section-tip">
-        Register parent contacts here to enable automatic real-time SMS status updates when students pass through scan gates.
+        Register parents/guardians who stay at the school here to capture their biometrics for gate access.
+        <br />
+        <span style="color: #f5a623; font-weight: 700;">Note:</span> Standard parent contact details for SMS alerts are registered directly within the Student Registration form.
       </p>
     </div>
 
@@ -213,7 +219,7 @@ onMounted(() => {
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-container card animate-pop">
         <div class="modal-header">
-          <h3>{{ isEditing ? 'Edit Guardian Details' : 'Register New Guardian' }}</h3>
+          <h3>{{ isEditing ? 'Edit Staying Parent Details' : 'Register New Staying Parent' }}</h3>
           <button @click="showModal = false" class="close-modal-btn">✕</button>
         </div>
         <div class="divider" style="margin: 16px 0;" />
@@ -281,7 +287,7 @@ onMounted(() => {
             
             <!-- Face Registration Webcam Capture -->
             <div class="webcam-column">
-              <label class="form-label">🔍 Biometric Face Registration (Optional)</label>
+              <label class="form-label">🔍 Biometric Face Registration (Required for staying parents)</label>
               <div class="webcam-frame">
                 <WebcamCapture
                   v-model="form.face_encoding"

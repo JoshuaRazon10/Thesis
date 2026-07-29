@@ -68,32 +68,32 @@ onMounted(() => {
         <StatCard
           title="Students Present Today"
           :value="summary.present"
-          icon="✅"
-          color="#10b981"
+          icon='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+          color="#1e3a5f"
           subtitle="Checked in at school"
           :loading="loading"
         />
         <StatCard
           title="Students Absent Today"
           :value="summary.absent"
-          icon="❌"
-          color="#ef4444"
+          icon='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+          color="#1e3a5f"
           subtitle="Not checked in"
           :loading="loading"
         />
         <StatCard
           title="Teachers Clocked In"
           :value="summary.teachers_in"
-          icon="👩‍🏫"
-          color="#2563eb"
+          icon='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>'
+          color="#1e3a5f"
           subtitle="Currently active"
           :loading="loading"
         />
         <StatCard
           title="Pending SMS Alerts"
           :value="summary.pending_sms"
-          icon="📱"
-          color="#f5a623"
+          icon='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+          color="#1e3a5f"
           subtitle="Outbox queue size"
           :loading="loading"
         />
@@ -105,8 +105,9 @@ onMounted(() => {
         <div class="card feed-card">
           <div class="feed-header">
             <h2 class="section-title">Recent Activity Logs</h2>
-            <button @click="fetchDashboardData" class="refresh-btn">
-              🔄 Refresh Feed
+            <button @click="fetchDashboardData" class="refresh-btn" style="display: flex; align-items: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Refresh Feed</span>
             </button>
           </div>
           <div class="divider" style="margin: 16px 0;" />
@@ -115,7 +116,9 @@ onMounted(() => {
             <div class="spinner"></div>
           </div>
           <div v-else-if="recentLogs.length === 0" class="empty-feed">
-            <span class="empty-icon">🔔</span>
+            <div class="empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); opacity: 0.6;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
             <p>No activity logs recorded today.</p>
           </div>
           <div v-else class="logs-feed">

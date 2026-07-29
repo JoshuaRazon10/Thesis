@@ -106,7 +106,9 @@ const setPage = (page: number) => {
     <!-- Top Bar with Search & Pagination Size -->
     <div class="datatable-header" v-if="searchable">
       <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block; color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
         <input
           type="text"
           v-model="searchQuery"
@@ -162,7 +164,9 @@ const setPage = (page: number) => {
           <!-- Empty State -->
           <tr v-else-if="paginatedData.length === 0">
             <td :colspan="columns.length" class="empty-state">
-              <div class="empty-icon">📂</div>
+              <div class="empty-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); opacity: 0.6; display: inline-block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
               <p>No matching records found.</p>
             </td>
           </tr>

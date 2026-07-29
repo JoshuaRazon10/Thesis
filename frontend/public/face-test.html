@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="/images/chcc_circle.png" />
   <title>CHCC Face Recognition Test</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #f0f4ff;
@@ -17,32 +23,73 @@
       gap: 18px;
       padding: 28px 16px 40px;
     }
-    h1 { color: #1e3a6e; font-size: 22px; font-weight: 800; margin-bottom: -6px; }
-    p.sub { color: #64748b; font-size: 13px; }
+
+    h1 {
+      color: #1e3a6e;
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: -6px;
+    }
+
+    p.sub {
+      color: #64748b;
+      font-size: 13px;
+    }
 
     /* Status badge */
     #status {
-      font-size: 17px; font-weight: 700;
+      font-size: 17px;
+      font-weight: 700;
       padding: 10px 32px;
       border-radius: 50px;
-      background: #e2e8f0; color: #64748b;
+      background: #e2e8f0;
+      color: #64748b;
       transition: all 0.3s;
-      min-width: 280px; text-align: center;
+      min-width: 280px;
+      text-align: center;
     }
-    #status.detected { background: #dcfce7; color: #15803d; box-shadow: 0 0 18px rgba(22,163,74,0.2); }
-    #status.loading  { background: #fef9c3; color: #854d0e; }
-    #status.error    { background: #fee2e2; color: #dc2626; }
+
+    #status.detected {
+      background: #dcfce7;
+      color: #15803d;
+      box-shadow: 0 0 18px rgba(22, 163, 74, 0.2);
+    }
+
+    #status.loading {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    #status.error {
+      background: #fee2e2;
+      color: #dc2626;
+    }
 
     /* Camera */
     .cam-wrap {
       position: relative;
-      width: 500px; max-width: 100%;
-      border-radius: 16px; overflow: hidden;
-      box-shadow: 0 8px 32px rgba(30,58,110,0.18);
+      width: 500px;
+      max-width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(30, 58, 110, 0.18);
       border: 3px solid #1e3a6e;
     }
-    #video { width: 100%; display: block; background: #000; }
-    #canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+    #video {
+      width: 100%;
+      display: block;
+      background: #000;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
 
     /* Match card */
     #match-card {
@@ -50,38 +97,74 @@
       background: #fff;
       border-radius: 14px;
       border: 2px solid #00c47a;
-      box-shadow: 0 4px 20px rgba(0,196,122,0.18);
+      box-shadow: 0 4px 20px rgba(0, 196, 122, 0.18);
       padding: 16px 24px;
-      width: 500px; max-width: 100%;
+      width: 500px;
+      max-width: 100%;
       align-items: center;
       gap: 16px;
     }
-    #match-card.show { display: flex; }
+
+    #match-card.show {
+      display: flex;
+    }
+
     #match-photo {
-      width: 72px; height: 72px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid #00c47a;
       flex-shrink: 0;
     }
-    #match-photo.hidden { display: none; }
+
+    #match-photo.hidden {
+      display: none;
+    }
+
     #match-photo-placeholder {
-      width: 72px; height: 72px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       background: #e0f7ef;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 30px;
       flex-shrink: 0;
     }
-    .match-info { flex: 1; }
-    .match-label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-    .match-name { font-size: 22px; font-weight: 800; color: #1e3a6e; }
-    .match-sub { font-size: 13px; color: #475569; margin-top: 2px; }
+
+    .match-info {
+      flex: 1;
+    }
+
+    .match-label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .match-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1e3a6e;
+    }
+
+    .match-sub {
+      font-size: 13px;
+      color: #475569;
+      margin-top: 2px;
+    }
+
     .match-dist {
-      font-size: 13px; font-weight: 700;
+      font-size: 13px;
+      font-weight: 700;
       padding: 4px 12px;
       border-radius: 20px;
-      background: #dcfce7; color: #15803d;
+      background: #dcfce7;
+      color: #15803d;
     }
 
     /* Stats grid */
@@ -89,40 +172,78 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      width: 500px; max-width: 100%;
+      width: 500px;
+      max-width: 100%;
     }
+
     .info-box {
-      background: #fff; border-radius: 10px;
+      background: #fff;
+      border-radius: 10px;
       padding: 12px 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       border: 1px solid #e2e8f0;
     }
-    .info-box label { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
-    .info-box span { font-size: 18px; font-weight: 700; color: #1e3a6e; display: block; margin-top: 2px; }
+
+    .info-box label {
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .info-box span {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e3a6e;
+      display: block;
+      margin-top: 2px;
+    }
 
     /* Student count badge */
     #db-badge {
-      font-size: 12px; color: #475569;
-      background: #e0e7ff; border-radius: 20px;
-      padding: 4px 14px; font-weight: 600;
+      font-size: 12px;
+      color: #475569;
+      background: #e0e7ff;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-weight: 600;
     }
 
-    .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
     button {
       padding: 10px 24px;
-      background: #1e3a6e; color: #fff;
-      border: none; border-radius: 24px;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
+      background: #1e3a6e;
+      color: #fff;
+      border: none;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    button:hover { background: #162d55; }
+
+    button:hover {
+      background: #162d55;
+    }
+
     button.secondary {
-      background: transparent; color: #1e3a6e;
+      background: transparent;
+      color: #1e3a6e;
       border: 2px solid #1e3a6e;
     }
-    button.secondary:hover { background: #e0e7ff; }
+
+    button.secondary:hover {
+      background: #e0e7ff;
+    }
   </style>
 </head>
+
 <body>
   <h1>🔍 Face Recognition Test</h1>
   <p class="sub">Tests real-time face matching against registered students</p>
@@ -169,7 +290,8 @@
     <button onclick="reloadStudents()">🔄 Reload Students</button>
     <button class="secondary" onclick="location.href='/'">← Back</button>
   </div>
-  <div id="mode-badge" style="text-align:center; margin-top:10px; font-size:14px; font-weight:700; color:#16a34a;">Current Mode: 📥 TIME IN</div>
+  <div id="mode-badge" style="text-align:center; margin-top:10px; font-size:14px; font-weight:700; color:#16a34a;">
+    Current Mode: 📥 TIME IN</div>
 
   <script src="/face-api.min.js"></script>
   <script>
@@ -203,11 +325,11 @@
       }
     }
 
-    const video   = document.getElementById('video');
-    const canvas  = document.getElementById('canvas');
-    const ctx     = canvas.getContext('2d');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
     const statusEl = document.getElementById('status');
-    const dbBadge  = document.getElementById('db-badge');
+    const dbBadge = document.getElementById('db-badge');
 
     let labeledDescriptors = [];
     let lastTime = Date.now();
@@ -328,7 +450,7 @@
     // Detection loop
     // ──────────────────────────────────────────────
     async function detect() {
-      if (!running || video.readyState < 2) { setTimeout(detect, 150); return; }
+      if (!running || video.readyState < 2) { setTimeout(detect, 100); return; }
 
       const now = Date.now();
       const fps = Math.round(1000 / Math.max(1, now - lastTime));
@@ -381,12 +503,12 @@
         const cl = Math.min(box.width, box.height) * 0.2;
         ctx.strokeStyle = '#00c47a';
         ctx.lineWidth = 2.5;
-        [[box.x, box.y, box.x+cl, box.y, box.x, box.y+cl],
-         [box.x+box.width-cl, box.y, box.x+box.width, box.y, box.x+box.width, box.y+cl],
-         [box.x, box.y+box.height-cl, box.x, box.y+box.height, box.x+cl, box.y+box.height],
-         [box.x+box.width-cl, box.y+box.height, box.x+box.width, box.y+box.height, box.x+box.width, box.y+box.height-cl]
-        ].forEach(([x1,y1,x2,y2,x3,y3]) => {
-          ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.stroke();
+        [[box.x, box.y, box.x + cl, box.y, box.x, box.y + cl],
+        [box.x + box.width - cl, box.y, box.x + box.width, box.y, box.x + box.width, box.y + cl],
+        [box.x, box.y + box.height - cl, box.x, box.y + box.height, box.x + cl, box.y + box.height],
+        [box.x + box.width - cl, box.y + box.height, box.x + box.width, box.y + box.height, box.x + box.width, box.y + box.height - cl]
+        ].forEach(([x1, y1, x2, y2, x3, y3]) => {
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke();
         });
 
         // Match against database
@@ -431,7 +553,7 @@
           const nowMs = Date.now();
           if (match.id && token && (!lastLogTime[match.id] || nowMs - lastLogTime[match.id] > 180000)) {
             lastLogTime[match.id] = nowMs;
-            
+
             fetch('http://localhost:5000/api/attendance/log', {
               method: 'POST',
               headers: {
@@ -444,10 +566,10 @@
                 method: 'scanner'
               })
             }).then(res => res.json()).then(data => {
-               console.log('Automated test API log success:', data);
+              console.log('Automated test API log success:', data);
             }).catch(err => {
-               console.error('Test API error:', err);
-               lastLogTime[match.id] = 0; // reset on error
+              console.error('Test API error:', err);
+              lastLogTime[match.id] = 0; // reset on error
             });
           }
 
@@ -520,4 +642,5 @@
     init();
   </script>
 </body>
+
 </html>
