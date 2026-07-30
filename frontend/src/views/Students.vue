@@ -40,7 +40,6 @@ const form = ref({
   grade_level: '',
   section: '',
   face_encoding: '',
-  face_descriptor: null as number[] | null,
   guardian_name: '',
   contact_no: ''
 });
@@ -73,16 +72,10 @@ const openRegisterModal = () => {
     grade_level: '',
     section: '',
     face_encoding: '',
-    face_descriptor: null,
     guardian_name: '',
     contact_no: ''
   };
   showModal.value = true;
-};
-
-// Receive 128-d descriptor from WebcamCapture
-const handleFaceDescriptor = (descriptor: number[]) => {
-  form.value.face_descriptor = descriptor.length > 0 ? descriptor : null;
 };
 
 const openEditModal = (student: any) => {
@@ -96,7 +89,6 @@ const openEditModal = (student: any) => {
     grade_level: student.grade_level || '',
     section: student.section || '',
     face_encoding: student.face_encoding || '',
-    face_descriptor: null,
     guardian_name: student.guardian_name || '',
     contact_no: student.contact_no || ''
   };
@@ -126,10 +118,7 @@ const handleSubmit = async () => {
     if (isEditing.value && editingId.value) {
       res = await api.put(`/students/${editingId.value}`, form.value);
     } else {
-      res = await api.post('/students', {
-        ...form.value,
-        face_descriptor: form.value.face_descriptor ?? null
-      });
+      res = await api.post('/students', form.value);
     }
 
     if (res.success) {
@@ -376,7 +365,6 @@ onMounted(() => {
               <div class="webcam-frame">
                 <WebcamCapture
                   v-model="form.face_encoding"
-                  @face-descriptor="handleFaceDescriptor"
                 />
               </div>
               <p class="webcam-tip">

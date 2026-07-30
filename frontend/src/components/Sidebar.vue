@@ -278,9 +278,9 @@ const handleLogout = () => {
 }
 
 .navItem.active {
-  background: #fff;
+  background: #f5a623;
   color: #1e3a5f;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(245, 166, 35, 0.3);
 }
 
 .navItem.active .navIcon {
@@ -382,5 +382,37 @@ const handleLogout = () => {
   border-color: #ef4444;
   box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
   transform: translateY(-2px);
+}
+
+.scanner-action-btn {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 196, 122, 0.4);
+  background: linear-gradient(135deg, rgba(0, 196, 122, 0.15), rgba(16, 185, 129, 0.08));
+  color: #00c47a;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 196, 122, 0.1);
+}
+
+.scanner-action-btn:hover {
+  background: linear-gradient(135deg, #00c47a, #10b981);
+  color: #fff;
+  border-color: #00c47a;
+  box-shadow: 0 8px 20px rgba(0, 196, 122, 0.35);
+  transform: translateY(-2px);
+}
+
+.scanner-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

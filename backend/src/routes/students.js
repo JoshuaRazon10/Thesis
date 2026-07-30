@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const compreface = require('../utils/compreface');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -65,7 +66,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/students - Create student
 router.post('/', async (req, res) => {
   try {
-    const { student_no, last_name, first_name, middle_name, section, grade_level, face_encoding, face_descriptor, guardian_name, contact_no } = req.body;
+    const { student_no, last_name, first_name, middle_name, section, grade_level, face_encoding, guardian_name, contact_no } = req.body;
 
     if (!student_no || !last_name || !first_name) {
       return res.status(400).json({ success: false, message: 'Student number, last name, and first name are required.' });
@@ -80,11 +81,21 @@ router.post('/', async (req, res) => {
     }
 
     const result = await db.query(
-      'INSERT INTO tbl_students (student_no, last_name, first_name, middle_name, section, grade_level, face_encoding, face_descriptor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [student_no, last_name, first_name, middle_name || null, section || null, grade_level || null, face_encoding || null, face_descriptor ? JSON.stringify(face_descriptor) : null]
+      'INSERT INTO tbl_students (student_no, last_name, first_name, middle_name, section, grade_level, face_encoding) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [student_no, last_name, first_name, middle_name || null, section || null, grade_level || null, face_encoding || null]
     );
 
     const newStudentId = result.insertId;
+
+    // Register face with CompreFace
+    const subjectId = `student_${newStudentId}`;
+    try {
+      await compreface.addFace(subjectId, face_encoding);
+      console.log(`✅ CompreFace: registered face for ${subjectId}`);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace registration failed for ${subjectId}:`, cfErr.message);
+      // Don't fail the student creation — face can be re-registered later
+    }
 
     await db.query(
       'INSERT INTO tbl_parents (student_id, guardian_name, contact_no) VALUES (?, ?, ?)',
@@ -148,6 +159,15 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/students/:id - Delete student
 router.delete('/:id', async (req, res) => {
   try {
+    // Remove face from CompreFace first
+    const subjectId = `student_${req.params.id}`;
+    try {
+      await compreface.deleteSubject(subjectId);
+      console.log(`✅ CompreFace: deleted subject ${subjectId}`);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace delete failed for ${subjectId}:`, cfErr.message);
+    }
+
     const result = await db.query('DELETE FROM tbl_students WHERE student_id = ?', [req.params.id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Student not found.' });
@@ -174,6 +194,16 @@ router.post('/:id/face', async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Student not found.' });
+    }
+
+    // Re-register face with CompreFace (delete old faces first)
+    const subjectId = `student_${req.params.id}`;
+    try {
+      await compreface.deleteAllFaces(subjectId);
+      await compreface.addFace(subjectId, face_encoding);
+      console.log(`✅ CompreFace: re-registered face for ${subjectId}`);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace re-registration failed for ${subjectId}:`, cfErr.message);
     }
 
     res.json({ success: true, message: 'Face encoding saved successfully.' });

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const compreface = require('../utils/compreface');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -10,7 +11,6 @@ router.use(authMiddleware);
 (async () => {
   try {
     await db.query(`ALTER TABLE tbl_parents ADD COLUMN IF NOT EXISTS face_encoding LONGTEXT NULL`);
-    await db.query(`ALTER TABLE tbl_parents ADD COLUMN IF NOT EXISTS face_descriptor JSON NULL`);
     console.log('✅ tbl_parents face columns ready');
   } catch (e) {
     // Columns may already exist — ignore
@@ -57,7 +57,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/parents - Create parent
 router.post('/', async (req, res) => {
   try {
-    const { student_id, guardian_name, contact_no, face_encoding, face_descriptor } = req.body;
+    const { student_id, guardian_name, contact_no, face_encoding } = req.body;
 
     if (!student_id || !guardian_name || !contact_no) {
       return res.status(400).json({ success: false, message: 'Student ID, guardian name, and contact number are required.' });
@@ -70,14 +70,26 @@ router.post('/', async (req, res) => {
     }
 
     const result = await db.query(
-      'INSERT INTO tbl_parents (student_id, guardian_name, contact_no, face_encoding, face_descriptor) VALUES (?, ?, ?, ?, ?)',
-      [student_id, guardian_name, contact_no, face_encoding || null, face_descriptor ? JSON.stringify(face_descriptor) : null]
+      'INSERT INTO tbl_parents (student_id, guardian_name, contact_no, face_encoding) VALUES (?, ?, ?, ?)',
+      [student_id, guardian_name, contact_no, face_encoding || null]
     );
+    const parentId = result.insertId;
+
+    // Register face with CompreFace if provided
+    if (face_encoding) {
+      const subjectId = `parent_${parentId}`;
+      try {
+        await compreface.addFace(subjectId, face_encoding);
+        console.log(`✅ CompreFace: registered face for ${subjectId}`);
+      } catch (cfErr) {
+        console.error(`⚠️ CompreFace registration failed for ${subjectId}:`, cfErr.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
       message: 'Parent/guardian created successfully.',
-      data: { parent_id: result.insertId, student_id, guardian_name, contact_no }
+      data: { parent_id: parentId, student_id, guardian_name, contact_no }
     });
   } catch (err) {
     console.error('Create parent error:', err);
@@ -88,7 +100,7 @@ router.post('/', async (req, res) => {
 // PUT /api/parents/:id - Update parent
 router.put('/:id', async (req, res) => {
   try {
-    const { student_id, guardian_name, contact_no, face_encoding, face_descriptor } = req.body;
+    const { student_id, guardian_name, contact_no, face_encoding } = req.body;
 
     // Build dynamic update
     const fields = [];
@@ -98,7 +110,6 @@ router.put('/:id', async (req, res) => {
     if (guardian_name !== undefined) { fields.push('guardian_name = ?'); values.push(guardian_name); }
     if (contact_no !== undefined) { fields.push('contact_no = ?'); values.push(contact_no); }
     if (face_encoding !== undefined) { fields.push('face_encoding = ?'); values.push(face_encoding || null); }
-    if (face_descriptor !== undefined) { fields.push('face_descriptor = ?'); values.push(face_descriptor ? JSON.stringify(face_descriptor) : null); }
 
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' });
@@ -114,6 +125,18 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Parent not found.' });
     }
 
+    // If face was updated, re-register in CompreFace
+    if (face_encoding) {
+      const subjectId = `parent_${req.params.id}`;
+      try {
+        await compreface.deleteAllFaces(subjectId);
+        await compreface.addFace(subjectId, face_encoding);
+        console.log(`✅ CompreFace: re-registered face for ${subjectId}`);
+      } catch (cfErr) {
+        console.error(`⚠️ CompreFace re-registration failed for ${subjectId}:`, cfErr.message);
+      }
+    }
+
     res.json({ success: true, message: 'Parent/guardian updated successfully.' });
   } catch (err) {
     console.error('Update parent error:', err);
@@ -124,6 +147,14 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/parents/:id - Delete parent
 router.delete('/:id', async (req, res) => {
   try {
+    // Remove face from CompreFace
+    const subjectId = `parent_${req.params.id}`;
+    try {
+      await compreface.deleteSubject(subjectId);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace delete failed for ${subjectId}:`, cfErr.message);
+    }
+
     const result = await db.query('DELETE FROM tbl_parents WHERE parent_id = ?', [req.params.id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Parent not found.' });

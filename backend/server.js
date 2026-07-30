@@ -55,6 +55,7 @@ app.use('/api/payroll', require('./src/routes/payroll'));
 app.use('/api/payslips', require('./src/routes/payslips'));
 app.use('/api/reports', require('./src/routes/reports'));
 app.use('/api/settings', require('./src/routes/settings'));
+app.use('/api/face', require('./src/routes/face'));
 
 // Health check
 app.get('/api/health', (req, res) => {

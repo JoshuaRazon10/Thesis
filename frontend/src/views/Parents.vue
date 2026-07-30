@@ -63,12 +63,7 @@ const form = ref({
   guardian_name: '',
   contact_no: '',
   face_encoding: '',
-  face_descriptor: null as number[] | null
 });
-
-const handleFaceDescriptor = (descriptor: number[]) => {
-  form.value.face_descriptor = descriptor.length > 0 ? descriptor : null;
-};
 
 const loadData = async () => {
   loading.value = true;
@@ -103,7 +98,6 @@ const openRegisterModal = () => {
     guardian_name: '',
     contact_no: '',
     face_encoding: '',
-    face_descriptor: null
   };
   studentSearch.value = '';
   showModal.value = true;
@@ -117,7 +111,6 @@ const openEditModal = (parent: any) => {
     guardian_name: parent.guardian_name,
     contact_no: parent.contact_no,
     face_encoding: parent.face_encoding || '',
-    face_descriptor: null
   };
   // Pre-fill search with current linked student
   const s = students.value.find((st: any) => String(st.student_id) === String(parent.student_id));
@@ -135,10 +128,7 @@ const handleSubmit = async () => {
     if (isEditing.value && editingId.value) {
       res = await api.put(`/parents/${editingId.value}`, form.value);
     } else {
-      res = await api.post('/parents', {
-        ...form.value,
-        face_descriptor: form.value.face_descriptor ?? null
-      });
+      res = await api.post('/parents', form.value);
     }
 
     if (res.success) {
@@ -291,7 +281,6 @@ onMounted(() => {
               <div class="webcam-frame">
                 <WebcamCapture
                   v-model="form.face_encoding"
-                  @face-descriptor="handleFaceDescriptor"
                 />
               </div>
               <p class="webcam-tip">

@@ -59,12 +59,62 @@ router.get('/today/summary', async (req, res) => {
       [today]
     );
     const totalStudents = await db.query("SELECT COUNT(*) AS count FROM tbl_students WHERE status = 'active'");
+    
+    // Students Breakdown (Primary vs Secondary)
+    // Assuming Grade 1-6 are primary, 7-12 are secondary. We will just do a simple string match or return 0 if unclassified.
+    const breakdownRows = await db.query(
+      `SELECT s.grade_level, COUNT(*) as count 
+       FROM tbl_attendance_records a 
+       JOIN tbl_students s ON a.student_id = s.student_id 
+       WHERE a.attendance_date = ? AND a.status IN ('present', 'late') 
+       GROUP BY s.grade_level`,
+      [today]
+    );
+    
+    let primaryCount = 0;
+    let secondaryCount = 0;
+    breakdownRows.forEach(row => {
+      const lvl = String(row.grade_level).toLowerCase();
+      if (lvl.includes('1') || lvl.includes('2') || lvl.includes('3') || lvl.includes('4') || lvl.includes('5') || lvl.includes('6') || lvl.includes('elem') || lvl.includes('prep') || lvl.includes('kinder')) {
+        if (lvl.includes('10') || lvl.includes('11') || lvl.includes('12')) {
+          secondaryCount += Number(row.count);
+        } else {
+          primaryCount += Number(row.count);
+        }
+      } else {
+        secondaryCount += Number(row.count); // Default others to secondary for now
+      }
+    });
+
+    // Weekly history (last 5 days) for the line chart
+    const weeklyRows = await db.query(
+      `SELECT attendance_date, COUNT(*) as count 
+       FROM tbl_attendance_records 
+       WHERE attendance_date >= DATE_SUB(?, INTERVAL 4 DAY) 
+       AND status IN ('present', 'late') 
+       GROUP BY attendance_date 
+       ORDER BY attendance_date ASC`,
+      [today]
+    );
+
+    // Format weekly data into arrays for chart.js
+    const weekLabels = [];
+    const weekData = [];
+    for (let i = 4; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      weekLabels.push(d.toLocaleDateString('en-US', { weekday: 'short' })); // Mon, Tue, etc.
+      const found = weeklyRows.find(r => r.attendance_date.toISOString().slice(0, 10) === dateStr);
+      weekData.push(found ? found.count : 0);
+    }
 
     // Teachers clocked in today
     const teachersIn = await db.query(
       'SELECT COUNT(*) AS count FROM tbl_teacher_timelog WHERE log_date = ? AND time_in IS NOT NULL',
       [today]
     );
+    const totalTeachers = await db.query("SELECT COUNT(*) AS count FROM tbl_teachers WHERE status = 'active'");
 
     res.json({
       success: true,
@@ -73,7 +123,27 @@ router.get('/today/summary', async (req, res) => {
         present_count: presentRows[0].count,
         absent_count: absentRows[0].count,
         total_students: totalStudents[0].count,
-        teachers_clocked_in: teachersIn[0].count
+        students_breakdown: {
+          primary: primaryCount,
+          secondary: secondaryCount
+        },
+        weekly_chart: {
+          labels: weekLabels,
+          data: weekData
+        },
+        teachers_clocked_in: teachersIn[0].count,
+        total_teachers: totalTeachers[0].count,
+        teacher_status: {
+          clock_in: teachersIn[0].count,
+          sick: 0,
+          excused: 0,
+          other: totalTeachers[0].count - teachersIn[0].count // Assuming the rest are just absent/other
+        },
+        parents_inside: 0, // Not tracked in DB yet
+        parents_breakdown: {
+          meeting: 0,
+          fetching: 0
+        }
       }
     });
   } catch (err) {

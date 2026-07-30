@@ -5,298 +5,174 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="/images/chcc_circle.png" />
-  <title>CHCC Face Recognition Test</title>
+  <title>CHCC Face Recognition Scanner</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f0f4ff;
+      background: #fffbf5;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      gap: 18px;
-      padding: 28px 16px 40px;
+      gap: 14px;
+      padding: 24px 16px 40px;
     }
 
-    h1 {
-      color: #1e3a6e;
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: -6px;
-    }
-
-    p.sub {
-      color: #64748b;
-      font-size: 13px;
-    }
+    h1 { color: #9a3412; font-size: 22px; font-weight: 800; }
+    p.sub { color: #78716c; font-size: 13px; margin-top: -6px; }
 
     /* Status badge */
     #status {
-      font-size: 17px;
-      font-weight: 700;
-      padding: 10px 32px;
-      border-radius: 50px;
-      background: #e2e8f0;
-      color: #64748b;
-      transition: all 0.3s;
-      min-width: 280px;
-      text-align: center;
+      font-size: 15px; font-weight: 700; padding: 10px 32px;
+      border-radius: 50px; background: #ffedd5; color: #9a3412;
+      transition: all 0.3s; min-width: 280px; text-align: center;
+      border: 1px solid #fed7aa;
     }
+    #status.detected { background: #dcfce7; color: #15803d; border-color: #bbf7d0; box-shadow: 0 0 18px rgba(22,163,74,0.2); }
+    #status.loading { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
+    #status.error { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
 
-    #status.detected {
-      background: #dcfce7;
-      color: #15803d;
-      box-shadow: 0 0 18px rgba(22, 163, 74, 0.2);
+    /* Instruction Banner */
+    .kyc-banner {
+      width: 100%; max-width: 520px;
+      display: flex; flex-direction: column; align-items: center;
+      background: linear-gradient(135deg, #c2410c, #ea580c);
+      border-radius: 14px; padding: 10px 18px;
+      box-shadow: 0 4px 14px rgba(194,65,12,0.25);
+      color: #fff; text-align: center;
     }
+    .kyc-banner.blink { background: linear-gradient(135deg, #ea580c, #f59e0b); }
+    .kyc-banner.countdown { background: linear-gradient(135deg, #16a34a, #22c55e); }
+    .kyc-banner.spoof { background: linear-gradient(135deg, #dc2626, #ef4444); }
+    .kyc-banner.success { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .kyc-banner.nomatch { background: linear-gradient(135deg, #dc2626, #ef4444); }
 
-    #status.loading {
-      background: #fef9c3;
-      color: #854d0e;
-    }
+    .step-title { font-size: 10px; font-weight: 800; color: #fef3c7; letter-spacing: 0.08em; text-transform: uppercase; }
+    .step-desc { font-size: 13px; font-weight: 600; color: #fff; margin-top: 2px; }
 
-    #status.error {
-      background: #fee2e2;
-      color: #dc2626;
-    }
-
-    /* Camera */
+    /* Camera wrap */
     .cam-wrap {
-      position: relative;
-      width: 500px;
-      max-width: 100%;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(30, 58, 110, 0.18);
-      border: 3px solid #1e3a6e;
+      position: relative; width: 520px; max-width: 100%;
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 10px 30px rgba(194,65,12,0.18);
+      border: 3px solid #fed7aa; background: #0a0f1e;
+      aspect-ratio: 4/3;
+    }
+    #video { width: 100%; height: 100%; object-fit: cover; display: block; transform: scaleX(-1); }
+    #overlay-canvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; transform: scaleX(-1);
     }
 
-    #video {
-      width: 100%;
-      display: block;
-      background: #000;
+    /* Countdown circle */
+    .countdown-wrap {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); z-index: 20; display: none;
     }
-
-    #canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
+    .countdown-num {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #ea580c, #f59e0b);
+      color: #fff; font-size: 36px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 24px rgba(234,88,12,0.45);
+      border: 3px solid rgba(255,255,255,0.3);
+      animation: cd-pulse 1s ease-in-out infinite;
     }
+    @keyframes cd-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
 
     /* Match card */
     #match-card {
-      display: none;
-      background: #fff;
-      border-radius: 14px;
-      border: 2px solid #00c47a;
-      box-shadow: 0 4px 20px rgba(0, 196, 122, 0.18);
-      padding: 16px 24px;
-      width: 500px;
-      max-width: 100%;
-      align-items: center;
-      gap: 16px;
+      display: none; background: #fff; border-radius: 14px;
+      border: 2px solid #f59e0b; box-shadow: 0 4px 20px rgba(245,158,11,0.18);
+      padding: 16px 24px; width: 520px; max-width: 100%;
+      align-items: center; gap: 16px;
     }
+    #match-card.show { display: flex; }
+    #match-card.nomatch { border-color: #fecaca; }
 
-    #match-card.show {
-      display: flex;
+    #match-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #f59e0b; flex-shrink: 0; }
+    #match-photo.hidden { display: none; }
+    #match-placeholder {
+      width: 64px; height: 64px; border-radius: 50%; background: #fff7ed;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; color: #f59e0b; border: 3px solid #ffedd5; flex-shrink: 0;
     }
+    .match-info { flex: 1; }
+    .match-label { font-size: 10px; color: #78716c; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .match-name { font-size: 20px; font-weight: 800; color: #9a3412; }
+    .match-sub { font-size: 12px; color: #475569; margin-top: 2px; }
+    .match-dist { font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: #ffedd5; color: #ea580c; white-space: nowrap; }
 
-    #match-photo {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid #00c47a;
-      flex-shrink: 0;
-    }
+    /* Stats */
+    .info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; width: 520px; max-width: 100%; }
+    .info-box { background: #fff; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #fed7aa; }
+    .info-box label { font-size: 10px; color: #78716c; font-weight: 700; text-transform: uppercase; display: block; }
+    .info-box span { font-size: 15px; font-weight: 700; color: #9a3412; display: block; margin-top: 2px; }
 
-    #match-photo.hidden {
-      display: none;
-    }
+    #db-badge { font-size: 12px; color: #9a3412; background: #ffedd5; border-radius: 20px; padding: 4px 14px; font-weight: 600; border: 1px solid #fed7aa; }
 
-    #match-photo-placeholder {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: #e0f7ef;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 30px;
-      flex-shrink: 0;
-    }
-
-    .match-info {
-      flex: 1;
-    }
-
-    .match-label {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-
-    .match-name {
-      font-size: 22px;
-      font-weight: 800;
-      color: #1e3a6e;
-    }
-
-    .match-sub {
-      font-size: 13px;
-      color: #475569;
-      margin-top: 2px;
-    }
-
-    .match-dist {
-      font-size: 13px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 20px;
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    /* Stats grid */
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      width: 500px;
-      max-width: 100%;
-    }
-
-    .info-box {
-      background: #fff;
-      border-radius: 10px;
-      padding: 12px 14px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      border: 1px solid #e2e8f0;
-    }
-
-    .info-box label {
-      font-size: 10px;
-      color: #94a3b8;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .info-box span {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1e3a6e;
-      display: block;
-      margin-top: 2px;
-    }
-
-    /* Student count badge */
-    #db-badge {
-      font-size: 12px;
-      color: #475569;
-      background: #e0e7ff;
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-weight: 600;
-    }
-
-    .btns {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
     button {
-      padding: 10px 24px;
-      background: #1e3a6e;
-      color: #fff;
-      border: none;
-      border-radius: 24px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
+      padding: 10px 24px; background: linear-gradient(135deg, #ea580c, #f59e0b);
+      color: #fff; border: none; border-radius: 24px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(234,88,12,0.2);
     }
-
-    button:hover {
-      background: #162d55;
-    }
-
-    button.secondary {
-      background: transparent;
-      color: #1e3a6e;
-      border: 2px solid #1e3a6e;
-    }
-
-    button.secondary:hover {
-      background: #e0e7ff;
-    }
+    button:hover { background: linear-gradient(135deg, #c2410c, #d97706); transform: translateY(-1px); }
+    button.secondary { background: transparent; color: #ea580c; border: 2px solid #fed7aa; box-shadow: none; }
+    button.secondary:hover { background: #fff7ed; }
   </style>
 </head>
 
 <body>
-  <h1>🔍 Face Recognition Test</h1>
-  <p class="sub">Tests real-time face matching against registered students</p>
+  <h1>Face Recognition Scanner</h1>
+  <p class="sub">Strict 90%+ match with live blink verification</p>
 
-  <div id="status" class="loading">⏳ Loading models...</div>
-  <div id="db-badge">Students loaded: 0</div>
+  <div id="status" class="loading">Loading models...</div>
+  <div id="db-badge">Connecting...</div>
+
+  <div id="banner" class="kyc-banner">
+    <div id="b-title" class="step-title">STEP 1 — CENTER FACE</div>
+    <div id="b-desc" class="step-desc">Position your face inside the oval</div>
+  </div>
 
   <div class="cam-wrap">
     <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+    <div id="cd-wrap" class="countdown-wrap">
+      <div id="cd-num" class="countdown-num">5</div>
+    </div>
   </div>
 
-  <!-- Match Result Card -->
   <div id="match-card">
-    <div id="match-photo-placeholder">👤</div>
-    <img id="match-photo" class="hidden" src="" alt="Student photo" />
+    <div id="match-placeholder">👤</div>
+    <img id="match-photo" class="hidden" src="" alt="" />
     <div class="match-info">
-      <div class="match-label">Recognized Student</div>
-      <div class="match-name" id="match-name">—</div>
-      <div class="match-sub" id="match-sub">—</div>
+      <div class="match-label" id="m-label">Recognized</div>
+      <div class="match-name" id="m-name">—</div>
+      <div class="match-sub" id="m-sub">—</div>
     </div>
-    <div class="match-dist" id="match-dist">—</div>
+    <div class="match-dist" id="m-dist">—</div>
   </div>
 
-  <!-- Stats -->
   <div class="info-grid">
-    <div class="info-box">
-      <label>Status</label>
-      <span id="stat-face">—</span>
-    </div>
-    <div class="info-box">
-      <label>Confidence</label>
-      <span id="stat-conf">—</span>
-    </div>
-    <div class="info-box">
-      <label>FPS</label>
-      <span id="stat-fps">—</span>
-    </div>
+    <div class="info-box"><label>Status</label><span id="stat-face">—</span></div>
+    <div class="info-box"><label>Confidence</label><span id="stat-conf">—</span></div>
+    <div class="info-box"><label>FPS</label><span id="stat-fps">—</span></div>
   </div>
 
   <div class="btns">
-    <button id="btn-in" style="background:#16a34a;" onclick="setLogMode('IN')">📥 Time IN Mode</button>
-    <button id="btn-out" class="secondary" onclick="setLogMode('OUT')">📤 Time OUT Mode</button>
-    <button onclick="reloadStudents()">🔄 Reload Students</button>
-    <button class="secondary" onclick="location.href='/'">← Back</button>
+    <button id="btn-in" onclick="setLogMode('IN')">Time IN Mode</button>
+    <button id="btn-out" class="secondary" onclick="setLogMode('OUT')">Time OUT Mode</button>
+    <button class="secondary" onclick="location.href='/'">Back</button>
   </div>
-  <div id="mode-badge" style="text-align:center; margin-top:10px; font-size:14px; font-weight:700; color:#16a34a;">
-    Current Mode: 📥 TIME IN</div>
+  <div id="mode-badge" style="text-align:center;margin-top:2px;font-size:14px;font-weight:700;color:#ea580c;">
+    Current Mode: TIME IN</div>
 
   <script src="/face-api.min.js"></script>
   <script>
     const API = 'http://localhost:5000/api';
-    const THRESHOLD = 0.50; // euclidean distance — lower = stricter. 0.50 = 50% match required
     let logMode = 'IN';
 
     function setLogMode(mode) {
@@ -305,335 +181,391 @@
       const btnOut = document.getElementById('btn-out');
       const badge = document.getElementById('mode-badge');
       if (mode === 'IN') {
-        btnIn.style.background = '#16a34a';
-        btnIn.style.color = '#fff';
-        btnIn.classList.remove('secondary');
-        btnOut.style.background = 'transparent';
-        btnOut.style.color = '#1e3a6e';
-        btnOut.classList.add('secondary');
-        badge.textContent = 'Current Mode: 📥 TIME IN';
-        badge.style.color = '#16a34a';
+        btnIn.style.background = 'linear-gradient(135deg,#ea580c,#f59e0b)'; btnIn.style.color = '#fff'; btnIn.classList.remove('secondary');
+        btnOut.style.background = 'transparent'; btnOut.style.color = '#ea580c'; btnOut.classList.add('secondary');
+        badge.textContent = 'Current Mode: TIME IN'; badge.style.color = '#ea580c';
       } else {
-        btnOut.style.background = '#dc2626';
-        btnOut.style.color = '#fff';
-        btnOut.classList.remove('secondary');
-        btnIn.style.background = 'transparent';
-        btnIn.style.color = '#1e3a6e';
-        btnIn.classList.add('secondary');
-        badge.textContent = 'Current Mode: 📤 TIME OUT';
-        badge.style.color = '#dc2626';
+        btnOut.style.background = '#dc2626'; btnOut.style.color = '#fff'; btnOut.classList.remove('secondary');
+        btnIn.style.background = 'transparent'; btnIn.style.color = '#ea580c'; btnIn.classList.add('secondary');
+        badge.textContent = 'Current Mode: TIME OUT'; badge.style.color = '#dc2626';
       }
     }
 
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const oc = document.getElementById('overlay-canvas');
+    const octx = oc.getContext('2d');
     const statusEl = document.getElementById('status');
     const dbBadge = document.getElementById('db-badge');
+    const bannerEl = document.getElementById('banner');
+    const bTitle = document.getElementById('b-title');
+    const bDesc = document.getElementById('b-desc');
+    const cdWrap = document.getElementById('cd-wrap');
+    const cdNum = document.getElementById('cd-num');
 
-    let labeledDescriptors = [];
+    let running = false, modelsOk = false, isRecognizing = false;
     let lastTime = Date.now();
-    let running = false;
     const lastLogTime = {};
 
-    // ──────────────────────────────────────────────
-    // Get auth token from localStorage (same as app)
-    // ──────────────────────────────────────────────
-    function getToken() {
-      return localStorage.getItem('sams_token') || '';
+    // Step: 'position' | 'blink' | 'countdown' | 'result'
+    let step = 'position';
+    let stableCount = 0, blinkCount = 0, eyesWereOpen = false;
+    let maxEar = 0, curEar = 0, countdownVal = 0, captureTimer = null;
+    let spoofDetected = false;
+    let frameToSubmit = '';
+
+    const faceHistory = [];
+    const HIST_SIZE = 15;
+
+    function getToken() { return localStorage.getItem('sams_token') || ''; }
+
+    // ── Reset ──
+    function resetState() {
+      if (step === 'result' || step === 'countdown') return;
+      step = 'position';
+      stableCount = 0; blinkCount = 0; eyesWereOpen = false;
+      maxEar = 0; curEar = 0; spoofDetected = false;
+      faceHistory.length = 0;
+      cdWrap.style.display = 'none';
+      uiUpdate('Position your face inside the oval');
     }
 
-    // ──────────────────────────────────────────────
-    // Load all registered students from backend
-    // and extract face descriptors
-    // ──────────────────────────────────────────────
-    async function reloadStudents() {
-      dbBadge.textContent = 'Loading students...';
-      labeledDescriptors = [];
-
-      const token = getToken();
-      if (!token) {
-        dbBadge.textContent = '⚠️ Not logged in — please log in first';
-        return;
+    // ── UI update ──
+    function uiUpdate(msg) {
+      bannerEl.className = 'kyc-banner';
+      if (step === 'position') {
+        bTitle.textContent = 'STEP 1 — CENTER FACE';
+      } else if (step === 'blink') {
+        bannerEl.classList.add('blink');
+        bTitle.textContent = 'STEP 2 — BLINK TO VERIFY';
+      } else if (step === 'countdown') {
+        bannerEl.classList.add('countdown');
+        bTitle.textContent = 'LIVENESS VERIFIED';
+      } else if (step === 'result') {
+        bTitle.textContent = 'SCANNING COMPLETE';
       }
+      if (spoofDetected && step !== 'position') {
+        bannerEl.className = 'kyc-banner spoof';
+        bTitle.textContent = 'LIVENESS CHECK FAILED';
+        msg = 'Static image detected — Please use your real face';
+      }
+      bDesc.textContent = msg;
+    }
+
+    // ── Submit to backend ──
+    async function submitRecognition() {
+      if (isRecognizing) return;
+      isRecognizing = true;
+      statusEl.textContent = 'Matching face...';
+      document.getElementById('stat-face').textContent = 'Matching...';
 
       try {
-        const res = await fetch(`${API}/students?limit=500`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const token = getToken();
+        if (!token) { statusEl.textContent = 'Please log in first'; isRecognizing = false; resetState(); return; }
+
+        const res = await fetch(`${API}/face/recognize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ image: frameToSubmit })
         });
         const data = await res.json();
-        if (!data.success) { dbBadge.textContent = '❌ ' + data.message; return; }
+        isRecognizing = false;
+        step = 'result';
 
-        const students = data.data.filter(s => s.face_encoding || s.face_descriptor);
-        dbBadge.textContent = `Processing ${students.length} students...`;
+        if (data.success && data.match) {
+          const m = data.match;
+          const acc = (m.similarity * 100).toFixed(1);
 
-        let loaded = 0;
-        for (const s of students) {
-          try {
-            let descriptor = null;
-
-            // ✅ FAST PATH: use pre-computed descriptor from database
-            if (s.face_descriptor) {
-              const parsed = typeof s.face_descriptor === 'string'
-                ? JSON.parse(s.face_descriptor)
-                : s.face_descriptor;
-              if (Array.isArray(parsed) && parsed.length === 128) {
-                descriptor = new Float32Array(parsed);
-              }
-            }
-
-            // SLOW FALLBACK: re-detect from image if no descriptor saved
-            if (!descriptor && s.face_encoding) {
-              const img = await loadImage(s.face_encoding);
-              const result = await faceapi
-                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-              if (result) descriptor = result.descriptor;
-            }
-
-            if (descriptor) {
-              labeledDescriptors.push({
-                id: s.student_id,
-                name: `${s.first_name} ${s.last_name}`,
-                studentNo: s.student_no,
-                grade: s.grade_level || '',
-                section: s.section || '',
-                photo: s.face_encoding,
-                descriptor
-              });
-              loaded++;
-            }
-          } catch (e) {
-            console.warn('Could not process student:', s.student_no, e.message);
-          }
-        }
-
-        dbBadge.textContent = `✅ ${loaded} student${loaded !== 1 ? 's' : ''} ready for recognition`;
-      } catch (e) {
-        dbBadge.textContent = '❌ Error: ' + e.message;
-        console.error(e);
-      }
-    }
-
-    // Helper: load base64 image as HTMLImageElement
-    function loadImage(src) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = src;
-      });
-    }
-
-    // ──────────────────────────────────────────────
-    // Find best matching student — returns match + all distances
-    // ──────────────────────────────────────────────
-    function findBestMatch(descriptor) {
-      if (!labeledDescriptors.length) return { match: null, distances: [] };
-
-      const distances = labeledDescriptors.map(ld => ({
-        name: ld.name,
-        distance: faceapi.euclideanDistance(descriptor, ld.descriptor)
-      })).sort((a, b) => a.distance - b.distance);
-
-      allDistances = distances;
-      const best = distances[0];
-      return {
-        match: best.distance <= THRESHOLD ? labeledDescriptors.find(l => l.name === best.name) : null,
-        bestDistance: best.distance,
-        distances
-      };
-    }
-
-    // ──────────────────────────────────────────────
-    // Detection loop
-    // ──────────────────────────────────────────────
-    async function detect() {
-      if (!running || video.readyState < 2) { setTimeout(detect, 100); return; }
-
-      const now = Date.now();
-      const fps = Math.round(1000 / Math.max(1, now - lastTime));
-      lastTime = now;
-      document.getElementById('stat-fps').textContent = fps;
-
-      const w = video.videoWidth, h = video.videoHeight;
-      canvas.width = w; canvas.height = h;
-
-      const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.30 });
-      const result = await faceapi
-        .detectSingleFace(video, options)
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Debug: draw distance table on canvas
-      const drawDebugDistances = (dists) => {
-        if (!dists || !dists.length) return;
-        ctx.save();
-        ctx.font = 'bold 12px monospace';
-        const top5 = dists.slice(0, 5);
-        const panelH = top5.length * 20 + 16;
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(8, h - panelH - 8, 280, panelH);
-        ctx.fillStyle = '#fff';
-        ctx.fillText('Top matches (dist < 0.40 = match):', 14, h - panelH + 6);
-        top5.forEach((d, i) => {
-          const isMatch = d.distance <= THRESHOLD;
-          ctx.fillStyle = isMatch ? '#4ade80' : '#f87171';
-          ctx.fillText(`${d.name}: ${d.distance.toFixed(3)} ${isMatch ? '✓' : '✗'}`, 14, h - panelH + 20 + i * 18);
-        });
-        ctx.restore();
-      };
-
-      if (result) {
-        const box = result.detection.box;
-        const score = result.detection.score;
-
-        // Draw bounding box
-        ctx.strokeStyle = '#00c47a';
-        ctx.lineWidth = 3;
-        ctx.shadowColor = '#00c47a';
-        ctx.shadowBlur = 14;
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
-        ctx.shadowBlur = 0;
-
-        // Corner brackets
-        const cl = Math.min(box.width, box.height) * 0.2;
-        ctx.strokeStyle = '#00c47a';
-        ctx.lineWidth = 2.5;
-        [[box.x, box.y, box.x + cl, box.y, box.x, box.y + cl],
-        [box.x + box.width - cl, box.y, box.x + box.width, box.y, box.x + box.width, box.y + cl],
-        [box.x, box.y + box.height - cl, box.x, box.y + box.height, box.x + cl, box.y + box.height],
-        [box.x + box.width - cl, box.y + box.height, box.x + box.width, box.y + box.height, box.x + box.width, box.y + box.height - cl]
-        ].forEach(([x1, y1, x2, y2, x3, y3]) => {
-          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke();
-        });
-
-        // Match against database
-        const { match, bestDistance, distances } = findBestMatch(result.descriptor);
-        drawDebugDistances(distances);
-        const accuracy = ((1 - (bestDistance ?? 1)) * 100).toFixed(1);
-
-        if (match) {
-          const label = match.name;
-          ctx.fillStyle = '#00c47a';
-          ctx.fillRect(box.x, box.y - 34, box.width, 32);
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 14px Segoe UI';
-          ctx.fillText(`✓ ${label}`, box.x + 8, box.y - 13);
-
-          statusEl.textContent = `✅ RECOGNIZED: ${match.name}`;
+          statusEl.textContent = 'RECOGNIZED: ' + m.name;
           statusEl.className = 'detected';
+          uiUpdate('Access Granted: ' + m.name + ' (' + acc + '%)');
+          bannerEl.className = 'kyc-banner success';
+          bTitle.textContent = 'MATCH FOUND';
 
-          // Show match card
           const card = document.getElementById('match-card');
-          card.classList.add('show');
-          document.getElementById('match-name').textContent = match.name;
-          document.getElementById('match-sub').textContent =
-            [match.studentNo, match.grade && `Grade ${match.grade}`, match.section].filter(Boolean).join(' · ');
-          document.getElementById('match-dist').textContent =
-            `${accuracy}% match`;
+          card.classList.add('show'); card.classList.remove('nomatch');
+          document.getElementById('m-label').textContent = 'Recognized ' + m.type.toUpperCase();
+          document.getElementById('m-name').textContent = m.name;
 
-          // Show photo
+          let sub = m.type.toUpperCase();
+          if (m.type === 'student') sub = [m.student_no, m.grade_level, m.section].filter(Boolean).join(' · ');
+          else if (m.type === 'teacher') sub = 'Teacher · ' + (m.role || '');
+          else if (m.type === 'guard') sub = 'Guard · ' + (m.guard_no || '');
+          document.getElementById('m-sub').textContent = sub;
+          document.getElementById('m-dist').textContent = acc + '% match';
+
           const photoEl = document.getElementById('match-photo');
-          const placeholderEl = document.getElementById('match-photo-placeholder');
-          if (match.photo) {
-            photoEl.src = match.photo;
-            photoEl.classList.remove('hidden');
-            placeholderEl.style.display = 'none';
-          } else {
-            photoEl.classList.add('hidden');
-            placeholderEl.style.display = 'flex';
-          }
+          const pholder = document.getElementById('match-placeholder');
+          if (m.face_encoding) { photoEl.src = m.face_encoding; photoEl.classList.remove('hidden'); pholder.style.display = 'none'; }
+          else { photoEl.classList.add('hidden'); pholder.style.display = 'flex'; pholder.textContent = '👤'; }
 
-          // Trigger API Log
-          const token = localStorage.getItem('sams_token');
-          const nowMs = Date.now();
-          if (match.id && token && (!lastLogTime[match.id] || nowMs - lastLogTime[match.id] > 180000)) {
-            lastLogTime[match.id] = nowMs;
+          document.getElementById('stat-face').textContent = 'Recognized';
+          document.getElementById('stat-conf').textContent = acc + '%';
 
-            fetch('http://localhost:5000/api/attendance/log', {
+          // Log attendance
+          const logKey = `${m.type}_${m.id}`;
+          const now = Date.now();
+          if (!lastLogTime[logKey] || now - lastLogTime[logKey] > 180000) {
+            lastLogTime[logKey] = now;
+            const payload = { log_type: logMode, method: 'face' };
+            payload[`${m.type}_id`] = m.id;
+            fetch(`${API}/attendance/log`, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                student_id: match.id,
-                log_type: logMode,
-                method: 'scanner'
-              })
-            }).then(res => res.json()).then(data => {
-              console.log('Automated test API log success:', data);
-            }).catch(err => {
-              console.error('Test API error:', err);
-              lastLogTime[match.id] = 0; // reset on error
-            });
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify(payload)
+            }).catch(() => { lastLogTime[logKey] = 0; });
           }
 
         } else {
-          ctx.fillStyle = 'rgba(239,68,68,0.85)';
-          ctx.fillRect(box.x, box.y - 34, box.width, 32);
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 13px Segoe UI';
-          ctx.fillText('✕ Unknown Person', box.x + 8, box.y - 13);
+          statusEl.textContent = 'UNRECOGNIZED / NO MATCH';
+          statusEl.className = 'error';
+          uiUpdate(data.message || 'No match found (below 90% threshold)');
+          bannerEl.className = 'kyc-banner nomatch';
+          bTitle.textContent = 'NO MATCH';
 
-          statusEl.textContent = labeledDescriptors.length === 0
-            ? '⚠️ No registered students loaded yet'
-            : '❓ Unknown — not registered';
-          statusEl.className = '';
-          document.getElementById('match-card').classList.remove('show');
+          const card = document.getElementById('match-card');
+          card.classList.add('show'); card.classList.add('nomatch');
+          document.getElementById('m-label').textContent = 'Not Recognized';
+          document.getElementById('m-name').textContent = 'Unknown Person';
+          document.getElementById('m-sub').textContent = data.similarity ? 'Similarity: ' + (data.similarity * 100).toFixed(1) + '% (below 90% threshold)' : 'Face not in database';
+          document.getElementById('m-dist').textContent = 'No Match';
+          document.getElementById('match-photo').classList.add('hidden');
+          const ph = document.getElementById('match-placeholder');
+          ph.style.display = 'flex'; ph.textContent = '?';
+
+          document.getElementById('stat-face').textContent = 'No Match';
+          document.getElementById('stat-conf').textContent = data.similarity ? (data.similarity * 100).toFixed(1) + '%' : '—';
         }
 
-        document.getElementById('stat-face').textContent = '✓ Yes';
-        document.getElementById('stat-conf').textContent = (score * 100).toFixed(1) + '%';
-      } else {
-        statusEl.textContent = '👤 No face detected — center your face';
-        statusEl.className = '';
-        document.getElementById('stat-face').textContent = 'No';
-        document.getElementById('stat-conf').textContent = '—';
-        document.getElementById('match-card').classList.remove('show');
-      }
+        // Hold result 5s then reset
+        setTimeout(() => {
+          document.getElementById('match-card').classList.remove('show', 'nomatch');
+          document.getElementById('stat-face').textContent = '—';
+          document.getElementById('stat-conf').textContent = '—';
+          statusEl.textContent = 'Center face to start'; statusEl.className = '';
+          step = 'position';
+          stableCount = 0; blinkCount = 0; eyesWereOpen = false;
+          maxEar = 0; curEar = 0; spoofDetected = false;
+          faceHistory.length = 0;
+          cdWrap.style.display = 'none';
+          uiUpdate('Position your face inside the oval');
+        }, 5000);
 
-      setTimeout(detect, 200);
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'RECOGNITION OFFLINE';
+        statusEl.className = 'error';
+        uiUpdate('Could not connect to face recognition engine.');
+        isRecognizing = false;
+        
+        setTimeout(() => {
+          step = 'position';
+          resetState();
+        }, 5000);
+      }
     }
 
-    // ──────────────────────────────────────────────
-    // Init
-    // ──────────────────────────────────────────────
+    // ── Countdown ──
+    function startCountdown() {
+      if (step === 'countdown' || step === 'result') return;
+      step = 'countdown';
+      countdownVal = 5;
+      cdWrap.style.display = 'block';
+      cdNum.textContent = '5';
+      uiUpdate('Hold still! Scanning in 5...');
+
+      const tick = () => {
+        if (!running || step !== 'countdown') return;
+        countdownVal--;
+        if (countdownVal <= 0) { cdWrap.style.display = 'none'; submitRecognition(); }
+        else { cdNum.textContent = countdownVal; uiUpdate('Hold still! Scanning in ' + countdownVal + '...'); captureTimer = setTimeout(tick, 1000); }
+      };
+      captureTimer = setTimeout(tick, 1000);
+    }
+
+    // ── Main Detection Loop ──
+    async function detect() {
+      if (!running || video.readyState < 2) { setTimeout(detect, 33); return; }
+
+      const now = Date.now();
+      document.getElementById('stat-fps').textContent = Math.round(1000 / Math.max(1, now - lastTime));
+      lastTime = now;
+
+      const w = video.videoWidth || 640, h = video.videoHeight || 480;
+      if (oc.width !== w) oc.width = w;
+      if (oc.height !== h) oc.height = h;
+
+      const cx = w / 2, cy = h / 2;
+      const rx = w * 0.22, ry = h * 0.38;
+
+      let faceBox = null, isCentered = false, eyesOpen = false, eyesClosed = false;
+
+      if (modelsOk && step !== 'result' && step !== 'countdown') {
+        try {
+          const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.35 });
+
+          if (step === 'position') {
+            const r = await faceapi.detectSingleFace(video, opts);
+            if (r) {
+              faceBox = r.box;
+              const fcx = faceBox.x + faceBox.width / 2, fcy = faceBox.y + faceBox.height / 2;
+              isCentered = Math.abs(fcx - cx) < w * 0.32 && Math.abs(fcy - cy) < h * 0.40;
+            }
+          } else if (step === 'blink') {
+            const r = await faceapi.detectSingleFace(video, opts).withFaceLandmarks();
+            if (r) {
+              faceBox = r.detection.box;
+              const fcx = faceBox.x + faceBox.width / 2, fcy = faceBox.y + faceBox.height / 2;
+              isCentered = Math.abs(fcx - cx) < w * 0.32 && Math.abs(fcy - cy) < h * 0.40;
+
+              // Micro-movement tracking
+              faceHistory.push({ x: fcx, y: fcy });
+              if (faceHistory.length > HIST_SIZE) faceHistory.shift();
+              if (faceHistory.length >= HIST_SIZE) {
+                const mx = faceHistory.reduce((s, p) => s + p.x, 0) / faceHistory.length;
+                const my = faceHistory.reduce((s, p) => s + p.y, 0) / faceHistory.length;
+                const v = faceHistory.reduce((s, p) => s + (p.x - mx) ** 2 + (p.y - my) ** 2, 0) / faceHistory.length;
+                spoofDetected = Math.sqrt(v) < 0.12;
+              }
+
+              if (r.landmarks) {
+                const pts = r.landmarks.positions;
+                const lH = (Math.abs(pts[41].y - pts[37].y) + Math.abs(pts[40].y - pts[38].y)) / 2;
+                const lW = Math.abs(pts[39].x - pts[36].x);
+                const lEAR = lW > 0 ? lH / lW : 0;
+                const rH = (Math.abs(pts[47].y - pts[43].y) + Math.abs(pts[46].y - pts[44].y)) / 2;
+                const rW = Math.abs(pts[45].x - pts[42].x);
+                const rEAR = rW > 0 ? rH / rW : 0;
+                const ear = (lEAR + rEAR) / 2;
+                curEar = ear;
+                if (ear > maxEar) maxEar = ear;
+                if (maxEar > 0.10) { eyesOpen = ear > maxEar * 0.80; eyesClosed = ear < maxEar * 0.65; }
+                else { eyesOpen = ear > 0.15; eyesClosed = ear < 0.10; }
+              }
+            }
+          }
+        } catch (e) { console.warn(e); }
+      }
+
+      // ── Draw overlay ──
+      octx.save();
+      octx.clearRect(0, 0, w, h);
+      octx.fillStyle = 'rgba(255,255,255,0.92)';
+      octx.fillRect(0, 0, w, h);
+      octx.globalCompositeOperation = 'destination-out';
+      octx.beginPath(); octx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); octx.fill();
+      octx.globalCompositeOperation = 'source-over';
+      octx.beginPath(); octx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      octx.strokeStyle = isCentered ? '#f59e0b' : '#c2410c';
+      octx.lineWidth = isCentered ? 5 : 4;
+      octx.shadowColor = isCentered ? '#f59e0b' : '#c2410c';
+      octx.shadowBlur = isCentered ? 16 : 8;
+      octx.stroke(); octx.shadowBlur = 0;
+      // Dashed inner guide
+      octx.beginPath(); octx.ellipse(cx, cy - ry * 0.1, rx * 0.65, ry * 0.65, 0, 0, Math.PI * 2);
+      octx.strokeStyle = isCentered ? 'rgba(245,158,11,0.5)' : 'rgba(194,65,12,0.25)';
+      octx.lineWidth = 1.5; octx.setLineDash([7, 5]); octx.stroke(); octx.setLineDash([]);
+      octx.restore();
+
+      // ── Step Machine ──
+      if (!faceBox) {
+        resetState();
+      } else if (isCentered) {
+        stableCount++;
+
+        if (spoofDetected && step !== 'position') {
+          uiUpdate('Static image detected — Please use your real face');
+          setTimeout(detect, 33); return;
+        }
+
+        if (step === 'position') {
+          let msg = stableCount < 6 ? 'Face detected! Hold still...' : 'Hold still...';
+          if (stableCount >= 12) {
+            step = 'blink'; blinkCount = 0; eyesWereOpen = false; maxEar = 0;
+            faceHistory.length = 0;
+            msg = 'Blink your eyes to verify!';
+          }
+          uiUpdate(msg);
+
+        } else if (step === 'blink') {
+          blinkCount++;
+          if (eyesOpen) eyesWereOpen = true;
+
+          let msg = 'Blink your eyes! (Eye: ' + Math.round(curEar * 100) + '% / Target: ' + Math.round(maxEar * 65) + '%)';
+          uiUpdate(msg);
+
+          if (eyesWereOpen && eyesClosed) {
+            // Capture frame for recognition
+            const tc = document.createElement('canvas');
+            tc.width = 640; tc.height = 480;
+            const tctx = tc.getContext('2d');
+            tctx.drawImage(video, 0, 0, 640, 480);
+            frameToSubmit = tc.toDataURL('image/jpeg', 0.85);
+            startCountdown();
+          }
+        }
+      } else {
+        stableCount = Math.max(0, stableCount - 1);
+        uiUpdate('Keep your face inside the oval');
+      }
+
+      setTimeout(detect, 33);
+    }
+
+    // ── Init ──
     async function init() {
-      statusEl.textContent = '⏳ Loading face detection models...';
-      statusEl.className = 'loading';
+      let backendOk = false;
+      let comprefaceOk = false;
 
       try {
-        // Load all needed models
+        const token = getToken();
+        if (!token) {
+          dbBadge.textContent = 'Please log in to the portal first';
+        } else {
+          dbBadge.textContent = 'Connecting to backend...';
+          const res = await fetch(`${API}/face/health`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const data = await res.json();
+          backendOk = true;
+          if (data.success && data.compreface_running) {
+            comprefaceOk = true;
+            dbBadge.textContent = 'Connected to CompreFace Engine';
+          } else {
+            dbBadge.textContent = 'CompreFace is not running. Please start Docker.';
+          }
+        }
+      } catch (e) {
+        console.warn('Backend connection failed:', e);
+        dbBadge.textContent = 'Backend Offline. Using local demo mode.';
+      }
+
+      // Always try to load models and start camera so liveness can be tested
+      try {
+        statusEl.textContent = 'Loading face detection models...';
+        statusEl.className = 'loading';
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models')
         ]);
-        console.log('✅ All face-api models loaded');
+        modelsOk = true;
 
-        statusEl.textContent = '📷 Starting camera...';
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480, facingMode: 'user' }, audio: false
-        });
-        video.srcObject = stream;
-        video.play();
-
+        statusEl.textContent = 'Starting camera...';
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+        video.srcObject = stream; video.play();
         video.addEventListener('loadeddata', () => {
           running = true;
-          statusEl.textContent = '👤 No face detected — position your face';
-          statusEl.className = '';
+          if (!backendOk) {
+            statusEl.textContent = 'Demo Mode (Backend Offline)';
+            statusEl.className = 'error';
+          } else if (!comprefaceOk) {
+            statusEl.textContent = 'Demo Mode (CompreFace Offline)';
+            statusEl.className = 'error';
+          } else {
+            statusEl.textContent = 'Center face to start';
+            statusEl.className = '';
+          }
           detect();
         });
-
-        // Load registered students
-        await reloadStudents();
       } catch (e) {
-        statusEl.textContent = '❌ Error: ' + e.message;
+        statusEl.textContent = 'Camera / Model Init Error: ' + e.message;
         statusEl.className = 'error';
         console.error(e);
       }
@@ -642,5 +574,4 @@
     init();
   </script>
 </body>
-
 </html>

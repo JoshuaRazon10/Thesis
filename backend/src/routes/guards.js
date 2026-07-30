@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const compreface = require('../utils/compreface');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -34,21 +35,34 @@ router.get('/:id', async (req, res) => {
 // POST /api/guards - Create guard
 router.post('/', async (req, res) => {
   try {
-    const { guard_no, full_name } = req.body;
+    const { guard_no, full_name, face_encoding } = req.body;
 
     if (!guard_no || !full_name) {
       return res.status(400).json({ success: false, message: 'Guard number and full name are required.' });
     }
 
     const result = await db.query(
-      'INSERT INTO tbl_guards (guard_no, full_name) VALUES (?, ?)',
-      [guard_no, full_name]
+      'INSERT INTO tbl_guards (guard_no, full_name, face_encoding) VALUES (?, ?, ?)',
+      [guard_no, full_name, face_encoding || null]
     );
+
+    const newGuardId = result.insertId;
+
+    // Register face with CompreFace if provided
+    if (face_encoding) {
+      const subjectId = `guard_${newGuardId}`;
+      try {
+        await compreface.addFace(subjectId, face_encoding);
+        console.log(`✅ CompreFace: registered face for ${subjectId}`);
+      } catch (cfErr) {
+        console.error(`⚠️ CompreFace registration failed for ${subjectId}:`, cfErr.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
       message: 'Guard created successfully.',
-      data: { guard_id: result.insertId, guard_no, full_name }
+      data: { guard_id: newGuardId, guard_no, full_name }
     });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -86,6 +100,14 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/guards/:id - Delete guard
 router.delete('/:id', async (req, res) => {
   try {
+    // Remove face from CompreFace
+    const subjectId = `guard_${req.params.id}`;
+    try {
+      await compreface.deleteSubject(subjectId);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace delete failed for ${subjectId}:`, cfErr.message);
+    }
+
     const result = await db.query('DELETE FROM tbl_guards WHERE guard_id = ?', [req.params.id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Guard not found.' });
@@ -112,6 +134,16 @@ router.post('/:id/face', async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Guard not found.' });
+    }
+
+    // Re-register face with CompreFace
+    const subjectId = `guard_${req.params.id}`;
+    try {
+      await compreface.deleteAllFaces(subjectId);
+      await compreface.addFace(subjectId, face_encoding);
+      console.log(`✅ CompreFace: re-registered face for ${subjectId}`);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace re-registration failed for ${subjectId}:`, cfErr.message);
     }
 
     res.json({ success: true, message: 'Face encoding saved successfully.' });

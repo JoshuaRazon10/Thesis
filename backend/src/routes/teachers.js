@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../data/db');
 const authMiddleware = require('../middleware/auth');
+const compreface = require('../utils/compreface');
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -109,7 +110,7 @@ router.post('/', async (req, res) => {
   try {
     const { 
       last_name, first_name, middle_name, role, 
-      hourly_rate, contact_no, deductions
+      hourly_rate, contact_no, deductions, face_encoding
     } = req.body;
 
     if (!last_name || !first_name) {
@@ -118,10 +119,10 @@ router.post('/', async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO tbl_teachers (
-        last_name, first_name, middle_name, role, hourly_rate, contact_no
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        last_name, first_name, middle_name, role, hourly_rate, contact_no, face_encoding
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        last_name, first_name, middle_name || null, role || 'Teacher', hourly_rate || null, contact_no || null
+        last_name, first_name, middle_name || null, role || 'Teacher', hourly_rate || null, contact_no || null, face_encoding || null
       ]
     );
 
@@ -133,6 +134,17 @@ router.post('/', async (req, res) => {
           `INSERT INTO tbl_teacher_deductions (teacher_id, deduction_type, deduction_name, amount) VALUES (?, ?, ?, ?)`,
           [teacherId, d.deduction_type, d.deduction_name || null, d.amount || 0]
         );
+      }
+    }
+
+    // Register face with CompreFace if provided
+    if (face_encoding) {
+      const subjectId = `teacher_${teacherId}`;
+      try {
+        await compreface.addFace(subjectId, face_encoding);
+        console.log(`✅ CompreFace: registered face for ${subjectId}`);
+      } catch (cfErr) {
+        console.error(`⚠️ CompreFace registration failed for ${subjectId}:`, cfErr.message);
       }
     }
 
@@ -201,6 +213,14 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/teachers/:id - Delete teacher
 router.delete('/:id', async (req, res) => {
   try {
+    // Remove face from CompreFace
+    const subjectId = `teacher_${req.params.id}`;
+    try {
+      await compreface.deleteSubject(subjectId);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace delete failed for ${subjectId}:`, cfErr.message);
+    }
+
     const result = await db.query('DELETE FROM tbl_teachers WHERE teacher_id = ?', [req.params.id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Teacher not found.' });
@@ -227,6 +247,16 @@ router.post('/:id/face', async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Teacher not found.' });
+    }
+
+    // Re-register face with CompreFace
+    const subjectId = `teacher_${req.params.id}`;
+    try {
+      await compreface.deleteAllFaces(subjectId);
+      await compreface.addFace(subjectId, face_encoding);
+      console.log(`✅ CompreFace: re-registered face for ${subjectId}`);
+    } catch (cfErr) {
+      console.error(`⚠️ CompreFace re-registration failed for ${subjectId}:`, cfErr.message);
     }
 
     res.json({ success: true, message: 'Face encoding saved successfully.' });

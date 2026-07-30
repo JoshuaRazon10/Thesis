@@ -2,6 +2,7 @@
 defineProps<{
   title: string;
   value: string | number;
+  total?: string | number;
   icon: string;
   color?: string; // hex or rgb color (e.g., #10b981)
   subtitle?: string;
@@ -25,8 +26,14 @@ defineProps<{
           </div>
         </div>
         <div class="value-container">
-          <span class="card-value">{{ value }}</span>
+          <div class="card-value-wrap">
+            <span class="card-value">{{ value }}</span>
+            <span v-if="total" class="card-total">/{{ total }}</span>
+          </div>
           <span v-if="subtitle" class="card-subtitle">{{ subtitle }}</span>
+        </div>
+        <div class="card-slot">
+          <slot></slot>
         </div>
       </div>
       <!-- Decorative background glow -->
@@ -82,15 +89,18 @@ defineProps<{
 }
 
 .stat-card:hover .icon-badge {
-  background: var(--accent-color);
-  color: white;
   transform: scale(1.05) rotate(5deg);
-  box-shadow: 0 8px 16px -4px var(--accent-color);
 }
 
 .value-container {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+
+.card-value-wrap {
+  display: flex;
+  align-items: baseline;
   gap: 4px;
 }
 
@@ -102,10 +112,20 @@ defineProps<{
   line-height: 1;
 }
 
+.card-total {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .card-subtitle {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-muted);
+}
+
+.card-slot {
+  margin-top: 16px;
 }
 
 /* Decorative Glow */
