@@ -179,10 +179,16 @@ onMounted(() => {
               📅 DTR
             </router-link>
             <button @click="openEditModal(item)" class="action-btn edit-btn" title="Edit Teacher">
-              ✏️
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
             </button>
             <button @click="handleDelete(item.teacher_id)" class="action-btn delete-btn" title="Delete Teacher">
-              🗑️
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
             </button>
           </div>
         </template>
@@ -227,7 +233,7 @@ onMounted(() => {
               </div>
 
               <div class="form-group">
-                <label for="contact_no" class="form-label">Contact Number (SMS)</label>
+                <label for="contact_no" class="form-label">Contact Number</label>
                 <input id="contact_no" type="text" class="form-input" v-model="form.contact_no" placeholder="e.g. +639..." />
               </div>
             </div>
@@ -454,28 +460,33 @@ onMounted(() => {
   width: 34px;
   height: 34px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--divider);
+  border: 1.5px solid var(--divider);
   background: white;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: var(--transition);
-  font-size: 14px;
 }
 
 .action-btn:hover {
-  transform: scale(1.05);
+  background: #f8fafc;
+  color: var(--text-main);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .edit-btn:hover {
-  background: #eff6ff;
-  border-color: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+  background: #f0fdf4;
 }
 
 .delete-btn:hover {
+  color: #ef4444;
+  border-color: #fca5a5;
   background: #fef2f2;
-  border-color: var(--danger);
 }
 
 .target-teacher-tag {

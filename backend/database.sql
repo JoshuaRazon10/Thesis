@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS tbl_admins (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Seed default admin (password: admin123)
-INSERT IGNORE INTO tbl_admins (admin_id, username, password_hash, full_name) VALUES
-(1, 'admin@chcc.edu.ph', '$2b$10$EpA8Eez.y.08s6mEetXQY.UeTfE6A1W.fOQhS/d8kI.qgUfE/Q2Y6', 'System Administrator');
+INSERT INTO tbl_admins (admin_id, username, password_hash, full_name) VALUES
+(1, 'admin@chcc.edu.ph', '$2b$10$TQkcU5CoUl6abQoen0I.kecNmx7leloUUR/vaLcDLm4OVTHS.mwUK', 'System Administrator')
+ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash);
 
 -- -----------------------------------------------------------
 -- 2. tbl_students

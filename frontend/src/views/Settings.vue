@@ -143,7 +143,7 @@ onMounted(() => {
       <template v-else>
         <!-- Time settings card -->
         <div class="card settings-card">
-          <h3 class="card-title">⏰ Teacher Work Schedule</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Teacher Work Schedule</h3>
           <p class="card-desc">Set the official daily check-in threshold. Log entries recorded past Time In will trigger late marks.</p>
           <div class="divider" style="margin: 20px 0;" />
 
@@ -172,7 +172,7 @@ onMounted(() => {
 
         <!-- SMS Settings card -->
         <div class="card settings-card">
-          <h3 class="card-title">📱 HttpSMS Configuration</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>HttpSMS Configuration</h3>
           <p class="card-desc">Configure your HttpSMS Account API Key to automatically send notifications to parents.</p>
           <div class="divider" style="margin: 20px 0;" />
 
@@ -206,7 +206,7 @@ onMounted(() => {
 
         <!-- Student Settings card -->
         <div class="card settings-card" style="margin-top: 32px;">
-          <h3 class="card-title">⏰ Student Class Schedule</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Student Class Schedule</h3>
           <p class="card-desc">Set the official daily check-in threshold for students. Log entries recorded past Time In will trigger late marks.</p>
           <div class="divider" style="margin: 20px 0;" />
 
@@ -235,7 +235,7 @@ onMounted(() => {
 
         <!-- Change Password Card -->
         <div class="card settings-card" style="margin-top: 32px;">
-          <h3 class="card-title">🔒 Change Administrator Password</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Change Administrator Password</h3>
           <p class="card-desc">Update the password for the system administrator account.</p>
           <div class="divider" style="margin: 20px 0;" />
 
@@ -271,17 +271,17 @@ onMounted(() => {
 
         <!-- Backup Settings Card -->
         <div class="card settings-card" style="margin-top: 32px;">
-          <h3 class="card-title">💾 Database Maintenance & Backup</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Database Maintenance &amp; Backup</h3>
           <p class="card-desc">Execute safe exports of student attendance tables and payroll history to secure cold-storage SQL files.</p>
           <div class="divider" style="margin: 20px 0;" />
 
           <div class="backup-block">
             <div class="backup-details">
-              <span class="db-status">Status: ⚡ Connected & Syncing</span>
+              <span class="db-status">Status: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Connected & Syncing</span>
               <span class="db-details">Database: MySQL (Aiven Host)</span>
             </div>
             <button @click="triggerBackup" class="btn btn-secondary">
-              📥 Create Full SQL Backup
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Create Full SQL Backup
             </button>
           </div>
         </div>

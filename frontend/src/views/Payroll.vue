@@ -409,7 +409,7 @@ onMounted(() => {
           <div class="divider" style="margin: 24px 0 16px 0;" />
           <div class="form-actions">
             <button type="button" @click="showPeriodModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">Create Period</button>
+            <button type="submit" class="btn btn-primary">Create</button>
           </div>
         </form>
       </div>
@@ -582,9 +582,6 @@ onMounted(() => {
         <div class="divider no-print" style="margin: 16px 0;" />
         <div class="form-actions no-print">
           <button type="button" @click="showViewModal = false" class="btn btn-secondary">Close</button>
-          <button type="button" @click="handleSendSMS(viewingRecord.payroll_id)" class="btn btn-secondary" style="border-color: var(--primary); color: var(--primary);">
-            💬 Send SMS
-          </button>
           <button type="button" @click="printComputation" class="btn btn-primary">🖨️ Print</button>
         </div>
       </div>

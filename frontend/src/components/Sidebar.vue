@@ -20,6 +20,7 @@ const navItems = [
 const authStore = useAuthStore();
 const route = useRoute();
 const isOpen = ref(false);
+const showLogoutModal = ref(false);
 
 const handleLogout = () => {
   authStore.logout();
@@ -74,18 +75,26 @@ const handleLogout = () => {
       </nav>
 
       <div class="bottom">
-        <div class="studentCard">
-          <img src="/images/chcc_circle.png" alt="Admin Avatar" class="studentAvatar" style="object-fit: cover;" />
-          <div class="studentInfo">
-            <div class="studentName">{{ authStore.user?.full_name }}</div>
-            <div class="studentMeta">Administrator</div>
-          </div>
-        </div>
-        <button class="logoutBtn" @click="handleLogout">
+        <button class="logoutBtn" @click="showLogoutModal = true">
           <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Sign Out
         </button>
       </div>
     </aside>
+
+    <!-- Custom Logout Modal -->
+    <div v-if="showLogoutModal" class="sidebar-modal-overlay">
+      <div class="sidebar-modal">
+        <div class="sidebar-modal-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+        <h3 class="sidebar-modal-title">Sign Out</h3>
+        <p class="sidebar-modal-desc">Are you sure you want to sign out of your account?</p>
+        <div class="sidebar-modal-actions">
+          <button @click="showLogoutModal = false" class="sidebar-modal-btn cancel">Cancel</button>
+          <button @click="handleLogout" class="sidebar-modal-btn confirm">Sign Out</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -277,6 +286,11 @@ const handleLogout = () => {
   transform: translateX(8px);
 }
 
+.navItem:active {
+  transform: translateX(4px) scale(0.96);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .navItem.active {
   background: #f5a623;
   color: #1e3a5f;
@@ -414,5 +428,103 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.sidebar-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.sidebar-modal {
+  background: #1e3a5f;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sidebar-modal-icon {
+  width: 56px; height: 56px;
+  background: rgba(245, 166, 35, 0.15);
+  color: #f5a623;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.sidebar-modal-title {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 850;
+  margin-bottom: 8px;
+}
+
+.sidebar-modal-desc {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14.5px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.sidebar-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.sidebar-modal-btn {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.sidebar-modal-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-modal-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-modal-btn.confirm {
+  background: #f5a623;
+  color: #1e3a5f;
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.25);
+}
+
+.sidebar-modal-btn.confirm:hover {
+  background: #ffb833;
+  transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 </style>

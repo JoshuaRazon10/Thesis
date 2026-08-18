@@ -158,7 +158,7 @@ const formatDate = (dateStr: string) => {
 
         <div class="filter-group button-group">
           <button @click="generateReport" class="btn btn-primary" :disabled="loading">
-            {{ loading ? 'Generating...' : '📊 Compile Report' }}
+            {{ loading ? 'Generating...' : 'Compile Report' }}
           </button>
         </div>
       </div>
@@ -168,8 +168,8 @@ const formatDate = (dateStr: string) => {
     <div v-if="reportData" class="report-section" style="margin-top: 32px;">
       <!-- Action Bar -->
       <div class="action-bar no-print" style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px;">
-        <button @click="exportCSV" class="btn btn-secondary">📥 Export CSV</button>
-        <button @click="exportPDF" class="btn btn-secondary">🖨️ Print PDF</button>
+        <button @click="exportCSV" class="btn btn-secondary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
+        <button @click="exportPDF" class="btn btn-secondary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print PDF</button>
       </div>
 
       <!-- Summary Stats Row -->
@@ -243,7 +243,7 @@ const formatDate = (dateStr: string) => {
 
     <!-- Empty state -->
     <div v-else class="card empty-report no-print" style="margin-top: 32px; padding: 40px; text-align: center; color: var(--text-muted);">
-      <span>📋</span>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
       <p style="margin-top: 12px; font-weight: 700;">Please specify specifications and compile to view report details.</p>
     </div>
   </div>

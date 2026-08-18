@@ -62,7 +62,7 @@ const handleSubmit = async () => {
               id="username"
               type="email"
               class="form-input"
-              placeholder="e.g. admin@chcc.edu.ph"
+              placeholder="Enter Your Email Address"
               required
               v-model="username"
               autocomplete="username"
